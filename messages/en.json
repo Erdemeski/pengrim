@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "title": "Pengrim — Football Advertising & Pitchside Brand Visibility",
+    "description": "Pengrim connects brands with LED perimeter boards, in-stadium inventory and live broadcast visibility at football matches. We run the whole process — from match and league selection to reporting — end to end."
+  },
+  "nav": {
+    "inventory": "Inventory",
+    "how": "How it works",
+    "reach": "Why football",
+    "showcase": "Showcase",
+    "contact": "Contact",
+    "cta": "Get a quote",
+    "menu": "Menu",
+    "close": "Close",
+    "language": "Language"
+  },
+  "hero": {
+    "eyebrow": "FOOTBALL ADVERTISING",
+    "titleTop": "Take your brand",
+    "titleHighlight": "pitchside",
+    "titleBottom": "and on-screen.",
+    "subtitle": "From LED perimeter boards to in-stadium inventory and live broadcast visibility — the right match, the right league, the right audience. We run the whole process end to end.",
+    "ctaPrimary": "Get a quote",
+    "ctaSecondary": "How it works",
+    "rotatingPrefix": "Your brand",
+    "rotating": { "a": "on air", "b": "in the stands", "c": "on screen" },
+    "scroll": "Scroll",
+    "ribbon": {
+      "a": "LED PERIMETER",
+      "b": "STADIUM INVENTORY",
+      "c": "BROADCAST VISIBILITY",
+      "d": "BRAND × MATCH"
+    }
+  },
+  "trust": {
+    "eyebrow": "PENGRIM IN NUMBERS",
+    "title": "Proven reach on the pitch",
+    "stats": {
+      "reach": "seasonal broadcast reach",
+      "matches": "matches covered",
+      "leagues": "leagues & tournaments",
+      "brands": "brand campaigns"
+    },
+    "note": "Sample figures — to be updated with real campaign data."
+  },
+  "inventory": {
+    "eyebrow": "INVENTORY",
+    "title": "Every frame of the pitch is ad space",
+    "subtitle": "We place your brand into the flow of the match — on air, in the stands, on screen.",
+    "items": {
+      "led": {
+        "title": "LED perimeter boards",
+        "desc": "Rotating, animated brand visibility on pitchside digital boards — right in the camera's eye.",
+        "tag": "Live broadcast"
+      },
+      "static": {
+        "title": "In-stadium inventory",
+        "desc": "Backboard, stand and tunnel branding; static boards and every brand touchpoint inside the venue.",
+        "tag": "On-site"
+      },
+      "broadcast": {
+        "title": "Broadcast visibility",
+        "desc": "Guaranteed brand time across TV and digital streams; placement optimized to camera angles.",
+        "tag": "TV & OTT"
+      },
+      "package": {
+        "title": "Packages & consulting",
+        "desc": "Campaign packages built around match, league and audience; let us handle buying and reporting.",
+        "tag": "End to end"
+      }
+    }
+  },
+  "how": {
+    "eyebrow": "HOW IT WORKS",
+    "title": "Matchday-ready in four steps",
+    "subtitle": "From brief to broadcast — we keep the process transparent and measurable.",
+    "steps": {
+      "select": {
+        "title": "Match & league selection",
+        "desc": "We pick matches, leagues and stadiums together, based on your audience and budget."
+      },
+      "package": {
+        "title": "Inventory & package",
+        "desc": "We build your campaign package — LED time, static inventory and broadcast visibility."
+      },
+      "approve": {
+        "title": "Purchase & approval",
+        "desc": "Contract, creative sign-off and placement plan — one point of contact, clear terms."
+      },
+      "report": {
+        "title": "Broadcast & reporting",
+        "desc": "After the match we report visibility time, camera exposure and reach metrics."
+      }
+    }
+  },
+  "reach": {
+    "eyebrow": "WHY FOOTBALL",
+    "title": "One match, millions of impressions",
+    "subtitle": "Football makes your brand visible in the stadium, on screen and across social — all at once.",
+    "channels": {
+      "tv": {
+        "title": "Live TV",
+        "desc": "Uninterrupted brand time during the live broadcast."
+      },
+      "ott": {
+        "title": "Digital & OTT",
+        "desc": "Repeated visibility on streaming and highlight platforms."
+      },
+      "social": {
+        "title": "Social clips",
+        "desc": "Your brand re-shared organically in goal and highlight clips."
+      },
+      "stadium": {
+        "title": "In-stadium",
+        "desc": "Direct contact with tens of thousands of fans in the stands."
+      }
+    }
+  },
+  "showcase": {
+    "eyebrow": "SHOWCASE",
+    "title": "How it looks on the pitch",
+    "subtitle": "Sample placements and broadcast frames. Imagery will be updated once brand assets are provided.",
+    "items": {
+      "a": {
+        "title": "LED perimeter",
+        "desc": "Brand in the midfield camera angle."
+      },
+      "b": {
+        "title": "Backboard branding",
+        "desc": "On screen again and again at every goal."
+      },
+      "c": {
+        "title": "Broadcast overlay",
+        "desc": "Sponsor on score and stat graphics."
+      }
+    }
+  },
+  "cta": {
+    "eyebrow": "READY",
+    "title": "Let's get your brand on the pitch",
+    "subtitle": "Send your brief in minutes — our team will come back with a tailored match and package proposal.",
+    "button": "Get a quote"
+  },
+  "contact": {
+    "eyebrow": "CONTACT",
+    "title": "Tell us what you need",
+    "subtitle": "Fill in the form and we'll get back within one business day. Just tell us what kind of inventory you're after.",
+    "form": {
+      "optional": "optional",
+      "name": { "label": "Full name", "placeholder": "Your full name" },
+      "company": { "label": "Brand / company", "placeholder": "Your company" },
+      "email": { "label": "Email", "placeholder": "you@brand.com" },
+      "phone": { "label": "Phone", "placeholder": "+1 555 000 0000" },
+      "requestType": { "label": "Inventory type", "placeholder": "Choose inventory" },
+      "league": { "label": "Match / league preference", "placeholder": "e.g. Premier League, Champions League" },
+      "budget": { "label": "Budget range", "placeholder": "Choose a range" },
+      "message": { "label": "Your message", "placeholder": "Briefly describe your goal and expectations." },
+      "submit": "Send request",
+      "sending": "Sending…",
+      "privacy": "Your details are only used to respond to your request.",
+      "requestTypes": {
+        "led": "LED perimeter board",
+        "static": "In-stadium inventory",
+        "broadcast": "Broadcast visibility",
+        "package": "Package / consulting",
+        "other": "Other / not sure"
+      },
+      "budgets": {
+        "a": "Under €25k",
+        "b": "€25k – €100k",
+        "c": "€100k – €250k",
+        "d": "Over €250k",
+        "e": "Not sure yet"
+      }
+    },
+    "validation": {
+      "nameMin": "Please enter your name.",
+      "companyMin": "Brand or company name is required.",
+      "email": "Enter a valid email address.",
+      "phoneMin": "Enter a valid phone number.",
+      "requestType": "Select an inventory type.",
+      "messageMin": "Tell us a little about your request."
+    },
+    "success": {
+      "title": "Request received",
+      "desc": "Thanks! Our team will get back to you shortly.",
+      "again": "Send another request"
+    },
+    "toast": {
+      "successTitle": "Sent",
+      "successDesc": "Your request reached us.",
+      "errorTitle": "Something went wrong",
+      "errorDesc": "Please try again."
+    }
+  },
+  "footer": {
+    "tagline": "We connect brands with football's most visible moments.",
+    "navTitle": "Explore",
+    "contactTitle": "Contact",
+    "email": "hello@pengrim.com",
+    "phone": "+90 (212) 000 00 00",
+    "address": "Istanbul, Türkiye",
+    "rights": "All rights reserved.",
+    "note": "Brand identity and imagery in progress."
+  }
+}
