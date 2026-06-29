@@ -203,18 +203,13 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
       return false;
     }
 
+    // Safari/Firefox `backdrop-filter: url()` SVG filtrelerini desteklemiyor (tarayıcı
+    // sınırı). Bunun dışında her genişlik/cihazda gerçek GlassSurface render edilir;
+    // viewport/pointer'a göre yapay olarak fallback'e düşürmüyoruz.
     const isWebkit = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
     const isFirefox = /Firefox/.test(navigator.userAgent);
 
     if (isWebkit || isFirefox) {
-      return false;
-    }
-
-    // Mobil/touch cihazlarda feDisplacementMap+feGaussianBlur zinciri backdrop-filter
-    // ile birlikte scroll esnasında ağır kasmaya yol açıyor; daha ucuz blur fallback'i kullan.
-    const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-    const isNarrowViewport = window.innerWidth < 768;
-    if (isCoarsePointer || isNarrowViewport) {
       return false;
     }
 

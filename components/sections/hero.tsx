@@ -15,18 +15,20 @@ import { SECTION_IDS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import SplitText from "@/components/SplitText";
 import GradientText from "@/components/GradientText";
-import RotatingText from "@/components/RotatingText";
 import ShinyText from "@/components/ShinyText";
-import Magnet from "@/components/Magnet";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
+
+// public/hero-frames içindeki kare dizisi (videodan 24fps çıkarıldı)
+const HERO_FRAME_DIR = "/hero-frames";
+const HERO_FRAME_COUNT = 121;
 
 export function Hero() {
   const t = useTranslations("hero");
   const reduce = useReducedMotion();
 
   const sectionRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const ribbonWords = [t("ribbon.a"), t("ribbon.b"), t("ribbon.c"), t("ribbon.d")];
@@ -34,49 +36,116 @@ export function Hero() {
   const titleClass =
     "font-display text-4xl font-extrabold uppercase leading-[0.95] tracking-tight sm:text-6xl md:text-7xl lg:text-[5.5rem]";
 
-  // Scroll ile videoyu kare kare süren ScrollTrigger kurulumu.
+  // Scroll-scrub: video elementini seek etmek mobilde takılıyor; bunun yerine
+  // videodan çıkarılmış kare dizisini <canvas> üzerine çiziyoruz (anında decode).
   useGSAP(
     () => {
-      const video = videoRef.current;
+      const canvas = canvasRef.current;
       const section = sectionRef.current;
-      if (!video || !section) return;
+      if (!canvas || !section) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-      // prefers-reduced-motion: scroll-jacking yok — video sade şekilde döngüde oynar.
-      if (reduce) {
-        video.loop = true;
-        video.play().catch(() => {});
-        return;
+      // kareleri yükle
+      const images: HTMLImageElement[] = [];
+      for (let i = 1; i <= HERO_FRAME_COUNT; i++) {
+        const img = new Image();
+        img.src = `${HERO_FRAME_DIR}/frame-${String(i).padStart(4, "0")}.jpg`;
+        images.push(img);
       }
 
-      // iOS: programatik currentTime atlamasını açmak için kısa bir play→pause.
-      video.play().then(() => video.pause()).catch(() => {});
+      let currentFrame = 0;
 
-      const build = () => {
-        const duration = video.duration || 5;
-        gsap
-          .timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top top",
-              end: () => "+=" + window.innerHeight * 3,
-              pin: true,
-              scrub: 1,
-              anticipatePin: 1,
-              invalidateOnRefresh: true,
-            },
-          })
-          // scroll konumu → videonun karesi (tüm scroll mesafesine yayılır)
-          .to(video, { currentTime: duration, duration: 1, ease: "none" }, 0)
-          // içerik scroll'un son kısmında yumuşakça kaybolur
-          .to(
-            contentRef.current,
-            { autoAlpha: 0, y: -40, duration: 0.4, ease: "none" },
-            0.6,
-          );
+      // canvas'ı viewport'a kapatacak şekilde (object-cover mantığı) çiz
+      const draw = (index: number) => {
+        let i = Math.max(0, Math.min(HERO_FRAME_COUNT - 1, Math.round(index)));
+        // henüz yüklenmemiş kareyi en yakın yüklenmiş kareyle değiştir
+        if (!images[i]?.complete || !images[i]?.naturalWidth) {
+          let near = -1;
+          for (let d = 1; d < HERO_FRAME_COUNT; d++) {
+            if (images[i - d]?.complete && images[i - d]?.naturalWidth) {
+              near = i - d;
+              break;
+            }
+            if (images[i + d]?.complete && images[i + d]?.naturalWidth) {
+              near = i + d;
+              break;
+            }
+          }
+          if (near === -1) return;
+          i = near;
+        }
+        currentFrame = i;
+        const img = images[i];
+        const cw = canvas.width;
+        const ch = canvas.height;
+        const ir = img.naturalWidth / img.naturalHeight;
+        const cr = cw / ch;
+        let dw, dh, dx, dy;
+        if (cr > ir) {
+          dw = cw;
+          dh = cw / ir;
+          dx = 0;
+          dy = (ch - dh) / 2;
+        } else {
+          dh = ch;
+          dw = ch * ir;
+          dy = 0;
+          dx = (cw - dw) / 2;
+        }
+        ctx.drawImage(img, dx, dy, dw, dh);
       };
 
-      if (video.readyState >= 1) build();
-      else video.addEventListener("loadedmetadata", build, { once: true });
+      const resize = () => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(canvas.clientWidth * dpr);
+        canvas.height = Math.round(canvas.clientHeight * dpr);
+        draw(currentFrame);
+      };
+      resize();
+      window.addEventListener("resize", resize);
+
+      // ilk kare yüklenince çiz
+      if (images[0].complete) draw(0);
+      else images[0].addEventListener("load", () => draw(0), { once: true });
+
+      // prefers-reduced-motion: scroll-jacking yok — yalnızca ilk kare sabit durur.
+      if (reduce) {
+        return () => window.removeEventListener("resize", resize);
+      }
+
+      const proxy = { frame: 0 };
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: () => "+=" + window.innerHeight * 3,
+            pin: true,
+            scrub: 0.5,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
+        })
+        // scroll konumu → kare indeksi (tüm scroll mesafesine yayılır)
+        .to(
+          proxy,
+          {
+            frame: HERO_FRAME_COUNT - 1,
+            duration: 1,
+            ease: "none",
+            onUpdate: () => draw(proxy.frame),
+          },
+          0,
+        )
+        // içerik scroll'un son kısmında yumuşakça kaybolur
+        .to(
+          contentRef.current,
+          { autoAlpha: 0, y: -40, duration: 0.4, ease: "none" },
+          0.6,
+        );
+
+      return () => window.removeEventListener("resize", resize);
     },
     { scope: sectionRef, dependencies: [reduce] },
   );
@@ -87,23 +156,24 @@ export function Hero() {
       id={SECTION_IDS.hero}
       className="relative h-dvh w-full overflow-hidden"
     >
-      {/* Scroll ile sürülen hero videosu — her ekranı/oryantasyonu object-cover ile tam kaplar */}
-      <video
-        ref={videoRef}
-        muted
-        playsInline
-        preload="auto"
-        poster="/hero-poster.jpg"
+      {/* kareler yüklenene kadar görünecek poster (object-cover) */}
+      <div
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover"
-      >
-        <source src="/herovideo-scrub.mp4" type="video/mp4" />
-      </video>
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url(/hero-poster.jpg)" }}
+      />
+
+      {/* Scroll ile sürülen hero kare dizisi — her ekranı/oryantasyonu tam kaplar */}
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full"
+      />
 
       {/* okunabilirlik için karartma katmanı + alt bölüme yumuşak geçiş */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/20 to-background"
+        className="absolute inset-0 bg-linear-to-b from-black/55 via-black/20 to-background"
       />
 
       {/* içerik katmanı */}
@@ -176,25 +246,6 @@ export function Hero() {
                 )}
               </h1>
 
-              {/* dönen alt-başlık */}
-              <motion.div
-                initial={reduce ? false : { opacity: 0 }}
-                animate={reduce ? false : { opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-                className="mt-5 flex flex-wrap items-center gap-2 font-display text-lg font-semibold uppercase tracking-tight sm:text-xl"
-              >
-                <span className="text-muted-foreground">{t("rotatingPrefix")}</span>
-                <RotatingText
-                  texts={[t("rotating.a"), t("rotating.b"), t("rotating.c")]}
-                  rotationInterval={2200}
-                  staggerDuration={0.02}
-                  staggerFrom="first"
-                  mainClassName="inline-flex overflow-hidden rounded-lg bg-primary px-2.5 py-0.5 text-primary-foreground"
-                  splitLevelClassName="overflow-hidden"
-                  transition={{ type: "spring", damping: 28, stiffness: 320 }}
-                />
-              </motion.div>
-
               {/* açıklama */}
               <motion.p
                 initial={reduce ? false : { opacity: 0, y: 16 }}
@@ -212,18 +263,16 @@ export function Hero() {
                 transition={{ delay: 0.72, duration: 0.6 }}
                 className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"
               >
-                <Magnet padding={80} magnetStrength={4} disabled={!!reduce}>
-                  <AnchorLink
-                    href={`#${SECTION_IDS.contact}`}
-                    className={cn(
-                      buttonVariants(),
-                      "group h-12 gap-2 rounded-xl px-6 text-base font-semibold shadow-[0_0_36px_-10px_var(--brand-turf)]",
-                    )}
-                  >
-                    {t("ctaPrimary")}
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                  </AnchorLink>
-                </Magnet>
+                <AnchorLink
+                  href={`#${SECTION_IDS.contact}`}
+                  className={cn(
+                    buttonVariants(),
+                    "group h-12 gap-2 rounded-xl px-6 text-base font-semibold shadow-[0_0_36px_-10px_var(--brand-turf)]",
+                  )}
+                >
+                  {t("ctaPrimary")}
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                </AnchorLink>
                 <AnchorLink
                   href={`#${SECTION_IDS.how}`}
                   className={cn(

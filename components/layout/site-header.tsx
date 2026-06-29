@@ -32,7 +32,7 @@ export function SiteHeader() {
   const content = (
     <div className="flex w-full items-center justify-between gap-3 px-1 sm:px-2">
       <Link href="/" aria-label="Pengrim" className="shrink-0">
-        <Logo />
+        <Logo priority />
       </Link>
 
       <div className="hidden lg:block">
@@ -73,8 +73,11 @@ export function SiteHeader() {
           className="dark relative text-foreground transition-all duration-500"
           style={{ height: barHeight }}
         >
-          {/* okunabilirlik için cam efektinin altında koyu scrim */}
-          <div className="absolute inset-0 rounded-2xl bg-[rgba(8,12,11,0)]" />
+          {/* Cam efektinin altında her zaman görünür koyu zemin. GlassSurface bazı
+              dar ekranlarda/tarayıcılarda soluk render olduğundan bu zemin başlığın
+              her en-boy oranında görünür kalmasını garanti eder; arkadaki frame'i tam
+              kapatması için altta birkaç piksel taşar. */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 -bottom-1.5 rounded-full bg-[rgba(8,12,11,0)]" />
 
           {/* ReactBits GlassSurface — liquid glass refraction header arka planı.
               SSR'de stilleri deterministik olmadığı için yalnızca mount sonrası render edilir;

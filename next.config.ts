@@ -6,6 +6,7 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const nextConfig: NextConfig = {
   // Kendi VM'inde `node .next/standalone/server.js` ile çalışması için
   output: "standalone",
+  allowedDevOrigins: ["192.168.68.106"],
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
