@@ -74,7 +74,7 @@ export function SiteHeader() {
           style={{ height: barHeight }}
         >
           {/* okunabilirlik için cam efektinin altında koyu scrim */}
-          <div className="absolute inset-0 rounded-2xl bg-[rgba(8,12,11,0.42)]" />
+          <div className="absolute inset-0 rounded-2xl bg-[rgba(8,12,11,0)]" />
 
           {/* ReactBits GlassSurface — liquid glass refraction header arka planı.
               SSR'de stilleri deterministik olmadığı için yalnızca mount sonrası render edilir;
@@ -83,13 +83,13 @@ export function SiteHeader() {
             <GlassSurface
               width="100%"
               height={barHeight}
-              borderRadius={16}
+              borderRadius={50}
               className="!absolute inset-0"
             >
               {content}
             </GlassSurface>
           ) : (
-            <div className="glass-dark absolute inset-0 flex items-center rounded-2xl">
+            <div className="px-2 glass-dark absolute inset-0 flex items-center rounded-full">
               {content}
             </div>
           )}
