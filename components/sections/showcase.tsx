@@ -30,7 +30,6 @@ export function Showcase() {
               width={380}
               height={300}
               delay={3200}
-              pauseOnHover
               cardDistance={50}
               verticalDistance={58}
               skewAmount={5}

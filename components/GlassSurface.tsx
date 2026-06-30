@@ -40,6 +40,8 @@ export interface GlassSurfaceProps {
     | 'plus-lighter';
   className?: string;
   style?: React.CSSProperties;
+  /** Yüzey her zaman koyuysa (örn. header), OS temasından bağımsız koyu cam kullan. */
+  forceDarkMode?: boolean;
 }
 
 const useDarkMode = () => {
@@ -79,7 +81,8 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   yChannel = 'G',
   mixBlendMode = 'difference',
   className = '',
-  style = {}
+  style = {},
+  forceDarkMode
 }) => {
   const uniqueId = useId().replace(/:/g, '-');
   const filterId = `glass-filter-${uniqueId}`;
@@ -95,7 +98,8 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   const blueChannelRef = useRef<SVGFEDisplacementMapElement>(null);
   const gaussianBlurRef = useRef<SVGFEGaussianBlurElement>(null);
 
-  const isDarkMode = useDarkMode();
+  const prefersDarkMode = useDarkMode();
+  const isDarkMode = forceDarkMode ?? prefersDarkMode;
 
   const generateDisplacementMap = () => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -262,22 +266,26 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
     } else {
       if (isDarkMode) {
         if (!backdropFilterSupported) {
+          // backdrop-filter yoksa: net görünür koyu cam zemin
           return {
             ...baseStyles,
-            background: 'rgba(0, 0, 0, 0.4)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: `inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
-                        inset 0 -1px 0 0 rgba(255, 255, 255, 0.1)`
+            background: 'rgba(8, 12, 11, 0.62)',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
+            boxShadow: `inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+                        inset 0 -1px 0 0 rgba(255, 255, 255, 0.08),
+                        0 8px 24px rgba(0, 0, 0, 0.35)`
           };
         } else {
+          // WebKit (iOS) dahil backdrop-filter blur destekleniyor: görünür koyu frosted cam
           return {
             ...baseStyles,
-            background: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(12px) saturate(1.8) brightness(1.2)',
-            WebkitBackdropFilter: 'blur(12px) saturate(1.8) brightness(1.2)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: `inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
-                        inset 0 -1px 0 0 rgba(255, 255, 255, 0.1)`
+            background: 'rgba(8, 12, 11, 0.5)',
+            backdropFilter: 'blur(16px) saturate(1.5)',
+            WebkitBackdropFilter: 'blur(16px) saturate(1.5)',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
+            boxShadow: `inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+                        inset 0 -1px 0 0 rgba(255, 255, 255, 0.08),
+                        0 8px 24px rgba(0, 0, 0, 0.35)`
           };
         }
       } else {

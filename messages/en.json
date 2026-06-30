@@ -16,15 +16,10 @@
   },
   "hero": {
     "eyebrow": "FOOTBALL ADVERTISING",
-    "titleTop": "Take your brand",
-    "titleHighlight": "pitchside",
-    "titleBottom": "and on-screen.",
-    "subtitle": "From LED perimeter boards to in-stadium inventory and live broadcast visibility — the right match, the right league, the right audience. We run the whole process end to end.",
+    "headline": "Take your brand pitchside and on-screen.",
+    "subline": "The right match, the right league, the right audience.",
     "ctaPrimary": "Get a quote",
     "ctaSecondary": "How it works",
-    "rotatingPrefix": "Your brand",
-    "rotating": { "a": "on air", "b": "in the stands", "c": "on screen" },
-    "scroll": "Scroll",
     "ribbon": {
       "a": "LED PERIMETER",
       "b": "STADIUM INVENTORY",

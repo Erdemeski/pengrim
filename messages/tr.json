@@ -16,15 +16,10 @@
   },
   "hero": {
     "eyebrow": "FUTBOL REKLAMCILIĞI",
-    "titleTop": "Markanızı",
-    "titleHighlight": "sahanın kenarına",
-    "titleBottom": "taşıyın.",
-    "subtitle": "LED çevre panolarından stadyum içi envantere ve maç yayını görünürlüğüne kadar — doğru maç, doğru lig, doğru kitle. Süreci uçtan uca biz yönetiriz.",
+    "headline": "Markanızı sahanın kenarına taşıyın.",
+    "subline": "Doğru maç, doğru lig, doğru kitle.",
     "ctaPrimary": "Teklif alın",
     "ctaSecondary": "Nasıl çalışır?",
-    "rotatingPrefix": "Markanız",
-    "rotating": { "a": "yayında", "b": "tribünde", "c": "ekranda" },
-    "scroll": "Keşfet",
     "ribbon": {
       "a": "LED ÇEVRE PANO",
       "b": "STADYUM ENVANTERİ",

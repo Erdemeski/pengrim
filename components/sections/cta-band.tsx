@@ -24,7 +24,7 @@ export function CtaBand() {
     <Section className="relative overflow-hidden">
       {/* eğimli signature şerit — bölüm ayıracı */}
       <div className="relative -mx-[12vw] mb-16 sm:mb-20">
-        <LedRibbon words={ribbonWords} tilt reverse durationSec={22} />
+        <LedRibbon words={ribbonWords} tilt reverse durationSec={50} />
       </div>
 
       <Container>

@@ -15,6 +15,8 @@ export interface GooeyNavProps {
   timeVariance?: number;
   colors?: number[];
   initialActiveIndex?: number;
+  /** Dışarıdan kontrol edilen aktif sekme (scroll-spy için). */
+  activeIndex?: number;
 }
 
 const GooeyNav: React.FC<GooeyNavProps> = ({
@@ -25,13 +27,22 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
   particleR = 100,
   timeVariance = 300,
   colors = [1, 2, 3, 1, 2, 3, 1, 4],
-  initialActiveIndex = 0
+  initialActiveIndex = 0,
+  activeIndex: controlledActiveIndex
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLUListElement>(null);
   const filterRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [activeIndex, setActiveIndex] = useState<number>(initialActiveIndex);
+
+  // dışarıdan kontrol edilen aktif sekmeyi (scroll-spy) iç duruma yansıt;
+  // [activeIndex] effect'i pill konumunu otomatik günceller.
+  useEffect(() => {
+    if (typeof controlledActiveIndex === "number") {
+      setActiveIndex(controlledActiveIndex);
+    }
+  }, [controlledActiveIndex]);
 
   const noise = (n = 1) => n / 2 - Math.random() * n;
   const getXY = (distance: number, pointIndex: number, totalPoints: number): [number, number] => {

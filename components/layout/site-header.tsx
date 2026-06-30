@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useMotionValueEvent, useScroll } from "motion/react";
+import { useLenis } from "lenis/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
@@ -19,25 +20,80 @@ export function SiteHeader() {
   const t = useTranslations("nav");
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const { scrollY } = useScroll();
+  const lenis = useLenis();
+
+  // logoya basınca sayfanın en üstüne yumuşak kaydır
+  const scrollToTop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (lenis) lenis.scrollTo(0);
+    else window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   useEffect(() => setMounted(true), []);
   useMotionValueEvent(scrollY, "change", (y) => {
     setScrolled(y > 24);
   });
 
+  // scroll-spy: o an viewport ortasındaki bölüme göre header'daki ilgili
+  // navigasyon öğesini aktif eder ("iş akışı"na gelince "iş akışı" aktif olur).
+  useEffect(() => {
+    const ids = NAV_ITEMS.map((i) => i.href.replace("#", ""));
+    const sections = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (!sections.length) return;
+
+    const ratios = new Map<string, number>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            ratios.set(entry.target.id, entry.intersectionRatio);
+          } else {
+            ratios.delete(entry.target.id);
+          }
+        }
+        let bestId: string | null = null;
+        let best = -1;
+        ratios.forEach((ratio, id) => {
+          if (ratio > best) {
+            best = ratio;
+            bestId = id;
+          }
+        });
+        if (bestId) {
+          const idx = ids.indexOf(bestId);
+          if (idx !== -1) setActiveIndex(idx);
+        }
+      },
+      // viewport'un orta bandını gözlem alanı yap → tek bir aktif bölüm
+      { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
+    );
+
+    sections.forEach((s) => observer.observe(s));
+    return () => observer.disconnect();
+  }, []);
+
   const navItems = NAV_ITEMS.map((i) => ({ label: t(i.key), href: i.href }));
   const barHeight = scrolled ? 58 : 66;
 
   const content = (
     <div className="flex w-full items-center justify-between gap-3 px-1 sm:px-2">
-      <Link href="/" aria-label="Pengrim" className="shrink-0">
+      <Link
+        href="/"
+        aria-label="Pengrim"
+        className="shrink-0"
+        onClick={scrollToTop}
+      >
         <Logo priority />
       </Link>
 
       <div className="hidden lg:block">
         <GooeyNav
           items={navItems}
+          activeIndex={activeIndex}
           particleCount={10}
           animationTime={500}
           particleDistances={[80, 8]}
@@ -87,6 +143,7 @@ export function SiteHeader() {
               width="100%"
               height={barHeight}
               borderRadius={50}
+              forceDarkMode
               className="!absolute inset-0"
             >
               {content}

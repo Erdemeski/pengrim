@@ -26,7 +26,7 @@ function LedDot() {
 export function LedRibbon({
   words,
   className,
-  durationSec = 26,
+  durationSec = 50,
   reverse = false,
   tilt = false,
 }: LedRibbonProps) {
@@ -52,21 +52,25 @@ export function LedRibbon({
 
         <div className="mask-fade-x">
           <Marquee durationSec={durationSec} reverse={reverse}>
-            {words.map((w, i) => (
-              <span key={i} className="flex items-center">
-                <span className="px-6 font-display text-sm font-extrabold uppercase tracking-[0.22em] text-floodlight [text-shadow:0_0_18px_color-mix(in_oklch,var(--brand-led)_45%,transparent)] sm:px-9 sm:text-base">
-                  {w}
+            {/* tek kopya en geniş ekranı bile doldursun diye kelimeleri tekrarla:
+                aksi halde döngüde boşluk olup sıra "geç yenileniyor" gibi görünür */}
+            {Array.from({ length: 4 })
+              .flatMap(() => words)
+              .map((w, i) => (
+                <span key={i} className="flex items-center">
+                  <span className="px-6 font-display text-sm font-extrabold uppercase tracking-[0.22em] text-floodlight [text-shadow:0_0_18px_color-mix(in_oklch,var(--brand-led)_45%,transparent)] sm:px-9 sm:text-base">
+                    {w}
+                  </span>
+                  <LedDot />
                 </span>
-                <LedDot />
-              </span>
-            ))}
+              ))}
           </Marquee>
         </div>
 
-        {/* broadcast parıltısı */}
+        {/* broadcast parıltısı — şeridin tamamını kat eder */}
         <div
           aria-hidden="true"
-          className="animate-shine pointer-events-none absolute inset-y-0 left-0 w-1/5 bg-gradient-to-r from-transparent via-white/15 to-transparent"
+          className="animate-shine pointer-events-none absolute inset-y-0 w-1/5 [transform:skewX(-18deg)] bg-gradient-to-r from-transparent via-white/15 to-transparent"
         />
       </div>
     </div>

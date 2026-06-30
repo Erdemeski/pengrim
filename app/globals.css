@@ -301,16 +301,18 @@
     animation-play-state: paused;
   }
 
+  /* `left`'i animasyonla (şerit genişliğine göreli → kesin): hüzme sol dıştan
+     (-25%) sağ dışa (110%) kadar tüm şeridi baştan sona kat eder. */
   @keyframes broadcast-shine {
     0% {
-      transform: translateX(-120%) skewX(-18deg);
+      left: -25%;
     }
     100% {
-      transform: translateX(220%) skewX(-18deg);
+      left: 110%;
     }
   }
   .animate-shine {
-    animation: broadcast-shine var(--shine-duration, 5s) ease-in-out infinite;
+    animation: broadcast-shine var(--shine-duration, 7s) linear infinite;
   }
 }
 

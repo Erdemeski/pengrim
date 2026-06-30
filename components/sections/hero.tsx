@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -13,15 +13,25 @@ import { LedRibbon } from "./led-ribbon";
 import { buttonVariants } from "@/components/ui/button";
 import { SECTION_IDS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import SplitText from "@/components/SplitText";
-import GradientText from "@/components/GradientText";
-import ShinyText from "@/components/ShinyText";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-// public/hero-frames içindeki kare dizisi (videodan 24fps çıkarıldı)
+// public/hero-frames içindeki kare dizisi (herovideonew.mp4'ten 24fps çıkarıldı)
 const HERO_FRAME_DIR = "/hero-frames";
-const HERO_FRAME_COUNT = 121;
+const HERO_FRAME_COUNT = 130;
+
+/** Bir metni kelime <span>'lerine böler (ScrollReveal kelime-kelime efekti için). */
+function splitWords(text: string, keyPrefix: string) {
+  return text.split(/(\s+)/).map((chunk, i) =>
+    /^\s+$/.test(chunk) ? (
+      chunk
+    ) : (
+      <span key={`${keyPrefix}-${i}`} className="hero-word inline-block">
+        {chunk}
+      </span>
+    ),
+  );
+}
 
 export function Hero() {
   const t = useTranslations("hero");
@@ -30,14 +40,17 @@ export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const revealRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
 
   const ribbonWords = [t("ribbon.a"), t("ribbon.b"), t("ribbon.c"), t("ribbon.d")];
 
-  const titleClass =
-    "font-display text-4xl font-extrabold uppercase leading-[0.95] tracking-tight sm:text-6xl md:text-7xl lg:text-[5.5rem]";
+  const eyebrowWords = useMemo(() => splitWords(t("eyebrow"), "e"), [t]);
+  const headlineWords = useMemo(() => splitWords(t("headline"), "h"), [t]);
+  const sublineWords = useMemo(() => splitWords(t("subline"), "s"), [t]);
 
-  // Scroll-scrub: video elementini seek etmek mobilde takılıyor; bunun yerine
-  // videodan çıkarılmış kare dizisini <canvas> üzerine çiziyoruz (anında decode).
+  // Scroll-scrub: kare dizisini <canvas>'a çiziyoruz + başlık kelimeleri aynı
+  // pinli zaman çizelgesinde (videoyla senkron) opaklık/blur ile beliriyor.
   useGSAP(
     () => {
       const canvas = canvasRef.current;
@@ -59,7 +72,6 @@ export function Hero() {
       // canvas'ı viewport'a kapatacak şekilde (object-cover mantığı) çiz
       const draw = (index: number) => {
         let i = Math.max(0, Math.min(HERO_FRAME_COUNT - 1, Math.round(index)));
-        // henüz yüklenmemiş kareyi en yakın yüklenmiş kareyle değiştir
         if (!images[i]?.complete || !images[i]?.naturalWidth) {
           let near = -1;
           for (let d = 1; d < HERO_FRAME_COUNT; d++) {
@@ -105,45 +117,74 @@ export function Hero() {
       resize();
       window.addEventListener("resize", resize);
 
-      // ilk kare yüklenince çiz
       if (images[0].complete) draw(0);
       else images[0].addEventListener("load", () => draw(0), { once: true });
 
-      // prefers-reduced-motion: scroll-jacking yok — yalnızca ilk kare sabit durur.
+      // prefers-reduced-motion: scroll-jacking yok, kelimeler doğrudan görünür.
       if (reduce) {
         return () => window.removeEventListener("resize", resize);
       }
 
+      const words = Array.from(
+        section.querySelectorAll<HTMLElement>(".hero-word"),
+      );
+      // FOUC olmadan başlangıç durumu (useGSAP layout-effect içinde çalışır)
+      gsap.set(words, { opacity: 0, filter: "blur(10px)", y: 14 });
+      gsap.set(ctaRef.current, { opacity: 0, y: 20 });
+
       const proxy = { frame: 0 };
-      gsap
-        .timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: () => "+=" + window.innerHeight * 3,
-            pin: true,
-            scrub: 0.5,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-          },
-        })
-        // scroll konumu → kare indeksi (tüm scroll mesafesine yayılır)
-        .to(
-          proxy,
-          {
-            frame: HERO_FRAME_COUNT - 1,
-            duration: 1,
-            ease: "none",
-            onUpdate: () => draw(proxy.frame),
-          },
-          0,
-        )
-        // içerik scroll'un son kısmında yumuşakça kaybolur
-        .to(
-          contentRef.current,
-          { autoAlpha: 0, y: -40, duration: 0.4, ease: "none" },
-          0.6,
-        );
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: section,
+          start: "top top",
+          end: () => "+=" + window.innerHeight * 3,
+          pin: true,
+          scrub: 0.5,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      // scroll konumu → kare indeksi (tüm scroll mesafesine yayılır)
+      tl.to(
+        proxy,
+        {
+          frame: HERO_FRAME_COUNT - 1,
+          duration: 1,
+          ease: "none",
+          onUpdate: () => draw(proxy.frame),
+        },
+        0,
+      );
+
+      // başlık bloğu hafif dönüşten düzelir (ScrollReveal baseRotation)
+      tl.fromTo(
+        revealRef.current,
+        { rotate: 4, transformOrigin: "0% 50%" },
+        { rotate: 0, ease: "none", duration: 0.5 },
+        0,
+      );
+
+      // kelimeler scroll ile sırayla netleşir (opacity + blur), videoyla senkron
+      tl.to(
+        words,
+        {
+          opacity: 1,
+          filter: "blur(0px)",
+          y: 0,
+          ease: "none",
+          duration: 0.2,
+          stagger: 0.035,
+        },
+        0.05,
+      );
+
+      // CTA butonları da scroll ile (kelimelerden sonra) belirir
+      tl.to(
+        ctaRef.current,
+        { opacity: 1, y: 0, ease: "none", duration: 0.25 },
+        0.6,
+      );
 
       return () => window.removeEventListener("resize", resize);
     },
@@ -180,87 +221,29 @@ export function Hero() {
       <div ref={contentRef} className="relative z-10 flex h-full flex-col">
         <div className="flex flex-1 items-center pt-28 pb-10 sm:pt-32">
           <Container>
-            <div className="max-w-4xl">
-              {/* eyebrow */}
-              <motion.div
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                animate={reduce ? false : { opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2.5"
-              >
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-led opacity-60" />
-                  <span className="relative inline-flex size-2 rounded-full bg-led" />
-                </span>
-                <ShinyText
-                  text={t("eyebrow")}
-                  speed={4}
-                  color="var(--muted-foreground)"
-                  shineColor="var(--brand-led)"
-                  className="font-mono text-[11px] font-medium uppercase tracking-[0.3em] sm:text-xs"
+            <div className="max-w-3xl">
+              {/* eyebrow — scroll ile senkron belirir */}
+              <span className="inline-flex items-center gap-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.3em] text-muted-foreground sm:text-xs">
+                <span
+                  className="hero-word size-2 shrink-0 rounded-full bg-led"
+                  aria-hidden="true"
                 />
-              </motion.div>
+                {eyebrowWords}
+              </span>
 
-              {/* başlık */}
-              <h1 className={cn("mt-5", titleClass)}>
-                {reduce ? (
-                  <span className="block">{t("titleTop")}</span>
-                ) : (
-                  <span className="block">
-                    <SplitText
-                      text={t("titleTop")}
-                      tag="span"
-                      splitType="chars"
-                      delay={28}
-                      duration={0.9}
-                      textAlign="left"
-                      className="inline-block"
-                    />
-                  </span>
-                )}
-                <GradientText
-                  colors={[
-                    "var(--brand-turf)",
-                    "var(--brand-led)",
-                    "var(--brand-turf)",
-                  ]}
-                  animationSpeed={7}
-                  className="block"
-                >
-                  {t("titleHighlight")}
-                </GradientText>
-                {reduce ? (
-                  <span className="block">{t("titleBottom")}</span>
-                ) : (
-                  <span className="block">
-                    <SplitText
-                      text={t("titleBottom")}
-                      tag="span"
-                      splitType="chars"
-                      delay={28}
-                      duration={0.9}
-                      textAlign="left"
-                      className="inline-block"
-                    />
-                  </span>
-                )}
-              </h1>
+              {/* scroll ile senkron beliren başlık + alt satır */}
+              <div ref={revealRef} className="mt-5">
+                <h1 className="font-display text-4xl font-extrabold uppercase leading-[0.98] tracking-tight text-white sm:text-6xl md:text-7xl">
+                  {headlineWords}
+                </h1>
+                <p className="mt-5 max-w-xl font-display text-lg font-semibold uppercase tracking-tight text-led sm:text-xl">
+                  {sublineWords}
+                </p>
+              </div>
 
-              {/* açıklama */}
-              <motion.p
-                initial={reduce ? false : { opacity: 0, y: 16 }}
-                animate={reduce ? false : { opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
-                className="mt-6 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"
-              >
-                {t("subtitle")}
-              </motion.p>
-
-              {/* CTA */}
-              <motion.div
-                initial={reduce ? false : { opacity: 0, y: 16 }}
-                animate={reduce ? false : { opacity: 1, y: 0 }}
-                transition={{ delay: 0.72, duration: 0.6 }}
+              {/* CTA — scroll ile belirir */}
+              <div
+                ref={ctaRef}
                 className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"
               >
                 <AnchorLink
@@ -277,13 +260,12 @@ export function Hero() {
                   href={`#${SECTION_IDS.how}`}
                   className={cn(
                     buttonVariants({ variant: "outline" }),
-                    "h-12 gap-2 rounded-xl px-6 text-base",
+                    "h-12 rounded-xl px-6 text-base",
                   )}
                 >
-                  <PlayCircle className="size-4 text-led" />
                   {t("ctaSecondary")}
                 </AnchorLink>
-              </motion.div>
+              </div>
             </div>
           </Container>
         </div>
@@ -292,7 +274,7 @@ export function Hero() {
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 20 }}
           animate={reduce ? false : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="pb-8 sm:pb-10"
         >
           <LedRibbon words={ribbonWords} />
