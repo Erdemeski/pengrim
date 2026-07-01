@@ -172,7 +172,9 @@
   }
   html {
     @apply font-sans;
-    scroll-behavior: smooth;
+    /* Lenis tek smooth-scroll motoru; native scroll-behavior:smooth burada
+       aktifse Lenis'in rAF-tabanlı sanal scroll'uyla pozisyon için yarışır. */
+    scroll-behavior: auto;
     /* Lenis akışı sırasında yatay taşmayı engelle */
     overflow-x: hidden;
   }

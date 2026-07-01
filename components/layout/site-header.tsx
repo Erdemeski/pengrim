@@ -10,6 +10,7 @@ import { Container } from "./container";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
 import { ThemeToggle } from "./theme-toggle";
+import { LanguageToggle } from "./language-toggle";
 import { AnchorLink } from "./anchor-link";
 import { NAV_ITEMS, SECTION_IDS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,7 @@ export function SiteHeader() {
       </div>
 
       <div className="flex items-center gap-1 sm:gap-1.5">
+        <LanguageToggle />
         <ThemeToggle />
         <AnchorLink
           href={`#${SECTION_IDS.contact}`}

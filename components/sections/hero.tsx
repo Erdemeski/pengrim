@@ -1,9 +1,14 @@
 "use client";
 
-import { useMemo, useRef } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useMemo, useRef, useState } from "react";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useMotionValueEvent,
+} from "motion/react";
 import { useTranslations } from "next-intl";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -37,6 +42,12 @@ export function Hero() {
   const t = useTranslations("hero");
   const reduce = useReducedMotion();
 
+  // "Aşağı kaydır" göstergesi: yalnızca sayfa en üstteyken görünür, scroll
+  // başlar başlamaz kaybolur, en üste dönülünce tekrar belirir.
+  const [atTop, setAtTop] = useState(true);
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (y) => setAtTop(y < 10));
+
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -56,16 +67,20 @@ export function Hero() {
       const canvas = canvasRef.current;
       const section = sectionRef.current;
       if (!canvas || !section) return;
-      const ctx = canvas.getContext("2d");
+      // alpha:false → her frame'de opak kare çizildiği için alfa karıştırma atlanır;
+      // desynchronized:true → destekleyen tarayıcılarda scroll-tetiklemeli redraw
+      // gecikmesini azaltır (compositor round-trip bypass ipucu).
+      const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
       if (!ctx) return;
 
-      // kareleri yükle
+      // kareleri oluştur (henüz yüklemeye başlamadan) — `.src` atanana kadar
+      // tarayıcı isteği başlatmaz.
       const images: HTMLImageElement[] = [];
       for (let i = 1; i <= HERO_FRAME_COUNT; i++) {
-        const img = new Image();
-        img.src = `${HERO_FRAME_DIR}/frame-${String(i).padStart(4, "0")}.jpg`;
-        images.push(img);
+        images.push(new Image());
       }
+      const frameSrc = (i: number) =>
+        `${HERO_FRAME_DIR}/frame-${String(i).padStart(4, "0")}.jpg`;
 
       let currentFrame = 0;
 
@@ -117,12 +132,54 @@ export function Hero() {
       resize();
       window.addEventListener("resize", resize);
 
+      // Kareleri kademeli yükle: sayfa açılışında 130 isteği (~10MB) tek seferde
+      // ateşleyip kritik JS/font indirmeleriyle bant genişliği için yarışmak yerine,
+      // scrub başlangıcını karşılayacak küçük bir pencereyi hemen, kalanını boşta
+      // (idle) zaman içinde küçük gruplar halinde yükler. Toplam indirilen byte
+      // değişmez — yalnızca zamanlama.
+      const EAGER_WINDOW = 8;
+      const BATCH_SIZE = 6;
+      const scheduleIdle: (cb: () => void) => number =
+        typeof window.requestIdleCallback === "function"
+          ? (cb) => window.requestIdleCallback(cb, { timeout: 500 })
+          : (cb) => window.setTimeout(cb, 120);
+      const cancelIdle: (id: number) => void =
+        typeof window.cancelIdleCallback === "function"
+          ? window.cancelIdleCallback.bind(window)
+          : window.clearTimeout.bind(window);
+
+      let idleHandle: number | null = null;
+      let cancelled = false;
+
+      for (let i = 0; i < EAGER_WINDOW && i < HERO_FRAME_COUNT; i++) {
+        images[i].src = frameSrc(i + 1);
+      }
+
+      let nextIndex = EAGER_WINDOW;
+      const loadNextBatch = () => {
+        if (cancelled) return;
+        let loaded = 0;
+        while (nextIndex < HERO_FRAME_COUNT && loaded < BATCH_SIZE) {
+          images[nextIndex].src = frameSrc(nextIndex + 1);
+          nextIndex++;
+          loaded++;
+        }
+        if (nextIndex < HERO_FRAME_COUNT) {
+          idleHandle = scheduleIdle(loadNextBatch);
+        }
+      };
+      idleHandle = scheduleIdle(loadNextBatch);
+
       if (images[0].complete) draw(0);
       else images[0].addEventListener("load", () => draw(0), { once: true });
 
       // prefers-reduced-motion: scroll-jacking yok, kelimeler doğrudan görünür.
       if (reduce) {
-        return () => window.removeEventListener("resize", resize);
+        return () => {
+          cancelled = true;
+          if (idleHandle !== null) cancelIdle(idleHandle);
+          window.removeEventListener("resize", resize);
+        };
       }
 
       const words = Array.from(
@@ -186,7 +243,11 @@ export function Hero() {
         0.6,
       );
 
-      return () => window.removeEventListener("resize", resize);
+      return () => {
+        cancelled = true;
+        if (idleHandle !== null) cancelIdle(idleHandle);
+        window.removeEventListener("resize", resize);
+      };
     },
     { scope: sectionRef, dependencies: [reduce] },
   );
@@ -208,7 +269,7 @@ export function Hero() {
       <canvas
         ref={canvasRef}
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full"
+        className="absolute inset-0 h-full w-full will-change-transform transform-gpu"
       />
 
       {/* okunabilirlik için karartma katmanı + alt bölüme yumuşak geçiş */}
@@ -269,6 +330,27 @@ export function Hero() {
             </div>
           </Container>
         </div>
+
+        {/* aşağı kaydır göstergesi — LED şeridinin hemen üstünde, yalnızca
+            sayfa en üstteyken görünür, scroll ile kaybolup en üste dönülünce
+            tekrar belirir */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none flex justify-center pb-3 sm:pb-4"
+          animate={{ opacity: atTop ? 1 : 0, y: atTop ? 0 : 10 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <motion.span
+            animate={reduce ? undefined : { y: [0, 8, 0] }}
+            transition={
+              reduce
+                ? undefined
+                : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+            }
+          >
+            <ChevronDown className="size-6 text-white/70" />
+          </motion.span>
+        </motion.div>
 
         {/* SIGNATURE şerit */}
         <motion.div
