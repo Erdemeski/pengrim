@@ -10,7 +10,6 @@ import {
 import { routing } from "@/i18n/routing";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
-import { Toaster } from "@/components/ui/sonner";
 import "../globals.css";
 
 const display = Archivo({
@@ -72,7 +71,6 @@ export default async function LocaleLayout({
         >
           <NextIntlClientProvider messages={messages}>
             <SmoothScroll>{children}</SmoothScroll>
-            <Toaster position="top-center" richColors />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

@@ -115,20 +115,7 @@
     "eyebrow": "SHOWCASE",
     "title": "How it looks on the pitch",
     "subtitle": "Sample placements and broadcast frames. Imagery will be updated once brand assets are provided.",
-    "items": {
-      "a": {
-        "title": "LED perimeter",
-        "desc": "Brand in the midfield camera angle."
-      },
-      "b": {
-        "title": "Backboard branding",
-        "desc": "On screen again and again at every goal."
-      },
-      "c": {
-        "title": "Broadcast overlay",
-        "desc": "Sponsor on score and stat graphics."
-      }
-    }
+    "placeholder": "Placeholder tiles — real match frames coming soon"
   },
   "cta": {
     "eyebrow": "READY",
@@ -138,55 +125,12 @@
   },
   "contact": {
     "eyebrow": "CONTACT",
-    "title": "Tell us what you need",
-    "subtitle": "Fill in the form and we'll get back within one business day. Just tell us what kind of inventory you're after.",
-    "form": {
-      "optional": "optional",
-      "name": { "label": "Full name", "placeholder": "Your full name" },
-      "company": { "label": "Brand / company", "placeholder": "Your company" },
-      "email": { "label": "Email", "placeholder": "you@brand.com" },
-      "phone": { "label": "Phone", "placeholder": "+1 555 000 0000" },
-      "requestType": { "label": "Inventory type", "placeholder": "Choose inventory" },
-      "league": { "label": "Match / league preference", "placeholder": "e.g. Premier League, Champions League" },
-      "budget": { "label": "Budget range", "placeholder": "Choose a range" },
-      "message": { "label": "Your message", "placeholder": "Briefly describe your goal and expectations." },
-      "submit": "Send request",
-      "sending": "Sending…",
-      "privacy": "Your details are only used to respond to your request.",
-      "requestTypes": {
-        "led": "LED perimeter board",
-        "static": "In-stadium inventory",
-        "broadcast": "Broadcast visibility",
-        "package": "Package / consulting",
-        "other": "Other / not sure"
-      },
-      "budgets": {
-        "a": "Under €25k",
-        "b": "€25k – €100k",
-        "c": "€100k – €250k",
-        "d": "Over €250k",
-        "e": "Not sure yet"
-      }
-    },
-    "validation": {
-      "nameMin": "Please enter your name.",
-      "companyMin": "Brand or company name is required.",
-      "email": "Enter a valid email address.",
-      "phoneMin": "Enter a valid phone number.",
-      "requestType": "Select an inventory type.",
-      "messageMin": "Tell us a little about your request."
-    },
-    "success": {
-      "title": "Request received",
-      "desc": "Thanks! Our team will get back to you shortly.",
-      "again": "Send another request"
-    },
-    "toast": {
-      "successTitle": "Sent",
-      "successDesc": "Your request reached us.",
-      "errorTitle": "Something went wrong",
-      "errorDesc": "Please try again."
-    }
+    "title": "Reach out directly",
+    "subtitle": "Let's talk about your campaign. Email or call us and we'll come back with a tailored match and package proposal.",
+    "responseNote": "We usually reply within one business day",
+    "emailLabel": "Email",
+    "phoneLabel": "Phone",
+    "addressLabel": "Location"
   },
   "footer": {
     "tagline": "We connect brands with football's most visible moments.",

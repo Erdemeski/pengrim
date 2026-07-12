@@ -56,13 +56,12 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 ### Fontlar
 `app/[locale]/layout.tsx` — Display: Archivo, Body: Inter, Mono: JetBrains Mono (`next/font`).
 
-### Görseller / 3D model (sonra eklenecek)
-- Showcase bölümü şu an CSS ile kurgulanmış "yayın karesi" maketleri kullanır (`components/sections/broadcast-frame.tsx`). Gerçek maç fotoğrafları gelince `next/image` ile değiştirilir (uzak alan adları `next.config.ts` → `images.remotePatterns`).
-- Hero'da 3D model için hazır slot: `components/sections/hero-backdrop.tsx` içinde `data-hero-3d-slot`. `.glb` model sağlanınca react-three-fiber Canvas buraya bağlanır.
+### Görseller
+- **Vitrin (Showcase)** ReactBits **Masonry** galerisidir (`components/sections/showcase.tsx` → `showcase-gallery.tsx`). Görseller `public/showcase/` klasöründen okunur (`.jpg/.png/.webp/.avif`); klasör boşken on-brand nötr placeholder karolar (gradient SVG data-URI) gösterilir. Sayfa statik (SSG) üretildiğinden **yeni görseller `next build` sonrası** galeriye yansır.
+- **Hero** arka planı `public/hero-frames/` içindeki 130 karelik scroll-scrub dizisidir; ilk kare yüksek çözünürlüklü `public/pengrim-first-frame-edited.png`. Sayfa en üstteyken ortada `public/pengrim_siyah.png` **MetallicPaint** (WebGL sıvı-metal) ile gösterilir (mobilde maliyetsiz statik `pengrim_beyaz.png`).
 
-### İletişim formu (şu an STUB)
-- Form: `components/sections/contact-form.tsx` (rhf + zod, paylaşılan şema `lib/validations.ts`).
-- Endpoint: `app/api/contact/route.ts` — talebi doğrular, **server log'una yazar**, `{ ok: true }` döner. Gerçek e-posta/CRM (örn. Resend) entegrasyonu bu dosyaya bağlanır.
+### İletişim
+- Form kaldırıldı. `components/sections/contact.tsx` yalnızca e-posta + telefon + konumla iletişime yönlendiren bir bloktur (değerler `messages/*.json` → `footer.email/phone/address`).
 
 ---
 
@@ -70,12 +69,12 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 
 ```
 app/[locale]/        layout + page (bölüm kompozisyonu)
-app/api/contact/     iletişim stub endpoint
 components/layout/   header (dinamik), footer, mobil nav, dil değiştirici, smooth-scroll
 components/sections/ hero, led-ribbon (signature), trust-stats, inventory,
-                     how-it-works, reach, showcase, cta-band, contact
+                     how-it-works, reach, showcase (+ showcase-gallery), cta-band, contact
 components/effects/  glass-card, marquee, reveal, count-up
 components/ui/        shadcn bileşenleri
 i18n/ · messages/     next-intl yapılandırması ve sözlükler
-lib/                  utils, constants, validations, icons
+lib/                  utils, constants, hero-intro-store, icons
+public/showcase/     vitrin görselleri (boşken placeholder)
 ```

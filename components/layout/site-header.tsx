@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useMotionValueEvent, useScroll } from "motion/react";
 import { useLenis } from "lenis/react";
 import { useTranslations } from "next-intl";
@@ -13,6 +13,11 @@ import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
 import { AnchorLink } from "./anchor-link";
 import { NAV_ITEMS, SECTION_IDS } from "@/lib/constants";
+import {
+  subscribeHeroIntro,
+  getHeroIntroProgress,
+  getHeroIntroServerSnapshot,
+} from "@/lib/hero-intro-store";
 import { cn } from "@/lib/utils";
 import GooeyNav from "@/components/GooeyNav";
 import GlassSurface from "@/components/GlassSurface";
@@ -24,6 +29,16 @@ export function SiteHeader() {
   const [activeIndex, setActiveIndex] = useState(0);
   const { scrollY } = useScroll();
   const lenis = useLenis();
+
+  // Hero intro evresi (merkezî metallic logo görünürken): 0 = intro başı,
+  // 1 = intro bitti. introActive iken header cam arka planı + logo + sağ küme
+  // gizlenir, yalnız navigasyon kalır.
+  const introProgress = useSyncExternalStore(
+    subscribeHeroIntro,
+    getHeroIntroProgress,
+    getHeroIntroServerSnapshot,
+  );
+  const introActive = introProgress < 0.7;
 
   // logoya basınca sayfanın en üstüne yumuşak kaydır
   const scrollToTop = (e: React.MouseEvent) => {
@@ -80,44 +95,6 @@ export function SiteHeader() {
   const navItems = NAV_ITEMS.map((i) => ({ label: t(i.key), href: i.href }));
   const barHeight = scrolled ? 58 : 66;
 
-  const content = (
-    <div className="flex w-full items-center justify-between gap-3 px-1 sm:px-2">
-      <Link
-        href="/"
-        aria-label="Pengrim"
-        className="shrink-0"
-        onClick={scrollToTop}
-      >
-        <Logo priority />
-      </Link>
-
-      <div className="hidden lg:block">
-        <GooeyNav
-          items={navItems}
-          activeIndex={activeIndex}
-          particleCount={10}
-          animationTime={500}
-          particleDistances={[80, 8]}
-        />
-      </div>
-
-      <div className="flex items-center gap-1 sm:gap-1.5">
-        <LanguageToggle />
-        <ThemeToggle />
-        <AnchorLink
-          href={`#${SECTION_IDS.contact}`}
-          className={cn(
-            buttonVariants(),
-            "hidden h-9 rounded-lg px-4 text-sm font-semibold sm:inline-flex",
-          )}
-        >
-          {t("cta")}
-        </AnchorLink>
-        <MobileNav />
-      </div>
-    </div>
-  );
-
   return (
     <header
       className={cn(
@@ -131,30 +108,77 @@ export function SiteHeader() {
           className="dark relative text-foreground transition-all duration-500"
           style={{ height: barHeight }}
         >
-          {/* Cam efektinin altında her zaman görünür koyu zemin. GlassSurface bazı
-              dar ekranlarda/tarayıcılarda soluk render olduğundan bu zemin başlığın
-              her en-boy oranında görünür kalmasını garanti eder; arkadaki frame'i tam
-              kapatması için altta birkaç piksel taşar. */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 -bottom-1.5 rounded-full bg-[rgba(8,12,11,0)]" />
+          {/* ARKA PLAN katmanı — içerikten ayrı: intro sürerken sönümlenir
+              (nav görünür kalır). SSR'de GlassSurface deterministik olmadığından
+              yalnız mount sonrası; öncesinde glass-dark fallback. */}
+          <div
+            aria-hidden="true"
+            className={cn(
+              "absolute inset-0 transition-opacity duration-500",
+              introActive ? "opacity-0" : "opacity-100",
+            )}
+          >
+            {mounted ? (
+              <GlassSurface
+                width="100%"
+                height={barHeight}
+                borderRadius={50}
+                forceDarkMode
+                className="!absolute inset-0"
+              />
+            ) : (
+              <div className="glass-dark absolute inset-0 rounded-full" />
+            )}
+          </div>
 
-          {/* ReactBits GlassSurface — liquid glass refraction header arka planı.
-              SSR'de stilleri deterministik olmadığı için yalnızca mount sonrası render edilir;
-              öncesinde glass-dark fallback (hydration mismatch'i önler). */}
-          {mounted ? (
-            <GlassSurface
-              width="100%"
-              height={barHeight}
-              borderRadius={50}
-              forceDarkMode
-              className="!absolute inset-0"
+          {/* İÇERİK katmanı — her zaman üstte; nav intro'da da görünür */}
+          <div className="relative z-10 flex h-full w-full items-center justify-between gap-3 px-2 sm:px-3">
+            <Link
+              href="/"
+              aria-label="Pengrim"
+              onClick={scrollToTop}
+              className={cn(
+                "shrink-0 transition-opacity duration-500",
+                introActive && "pointer-events-none opacity-0",
+              )}
             >
-              {content}
-            </GlassSurface>
-          ) : (
-            <div className="px-2 glass-dark absolute inset-0 flex items-center rounded-full">
-              {content}
+              <Logo priority />
+            </Link>
+
+            <div className="hidden lg:block">
+              <GooeyNav
+                items={navItems}
+                activeIndex={activeIndex}
+                particleCount={10}
+                animationTime={500}
+                particleDistances={[80, 8]}
+              />
             </div>
-          )}
+
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              {/* masaüstü kontrolleri — intro'da gizli ("yalnız navigasyon") */}
+              <div
+                className={cn(
+                  "flex items-center gap-1 transition-opacity duration-500 sm:gap-1.5",
+                  introActive && "pointer-events-none opacity-0",
+                )}
+              >
+                <LanguageToggle />
+                <ThemeToggle />
+                <AnchorLink
+                  href={`#${SECTION_IDS.contact}`}
+                  className={cn(
+                    buttonVariants(),
+                    "hidden h-9 rounded-lg px-4 text-sm font-semibold sm:inline-flex",
+                  )}
+                >
+                  {t("cta")}
+                </AnchorLink>
+              </div>
+              {/* mobil menü — intro'da da erişilebilir kalır */}
+              <MobileNav />
+            </div>
+          </div>
         </div>
       </Container>
     </header>

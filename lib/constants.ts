@@ -54,14 +54,3 @@ export const CHANNELS: ReadonlyArray<{ key: string; icon: IconName }> = [
   { key: "stadium", icon: "Users" },
 ];
 
-export const SHOWCASE = ["a", "b", "c"] as const;
-
-export const REQUEST_TYPES = [
-  "led",
-  "static",
-  "broadcast",
-  "package",
-  "other",
-] as const;
-
-export const BUDGETS = ["a", "b", "c", "d", "e"] as const;

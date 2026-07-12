@@ -1,0 +1,8 @@
+# Vitrin galerisi görselleri
+#
+# Bu klasöre .jpg / .jpeg / .png / .webp / .avif uzantılı görseller ekleyin;
+# Vitrin (VİTRİN) bölümündeki Masonry galerisi otomatik olarak bunları gösterir.
+# Klasör boşken nötr placeholder karolar görünür.
+#
+# NOT: Sayfa statik (SSG) üretildiğinden yeni görseller `next build` sonrası
+# galeriye yansır.

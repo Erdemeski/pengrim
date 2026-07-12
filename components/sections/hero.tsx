@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   motion,
   useReducedMotion,
@@ -17,13 +18,23 @@ import { AnchorLink } from "@/components/layout/anchor-link";
 import { LedRibbon } from "./led-ribbon";
 import { buttonVariants } from "@/components/ui/button";
 import { SECTION_IDS } from "@/lib/constants";
+import { setHeroIntroProgress } from "@/lib/hero-intro-store";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
+// WebGL sıvı-metal logo yalnızca istemcide (ssr:false) yüklenir.
+const MetallicPaint = dynamic(() => import("@/components/MetallicPaint"), {
+  ssr: false,
+});
+
 // public/hero-frames içindeki kare dizisi (herovideonew.mp4'ten 24fps çıkarıldı)
 const HERO_FRAME_DIR = "/hero-frames";
 const HERO_FRAME_COUNT = 130;
+// İlk kare: sıkıştırılmış frame-0001.jpg yerine yüksek çözünürlüklü düzenlenmiş PNG.
+const HERO_FIRST_FRAME = "/pengrim-first-frame-edited.png";
+// Intro (merkezî logo) evresinin pinli zaman çizelgesindeki bitiş oranı.
+const INTRO_END = 0.16;
 
 /** Bir metni kelime <span>'lerine böler (ScrollReveal kelime-kelime efekti için). */
 function splitWords(text: string, keyPrefix: string) {
@@ -48,11 +59,26 @@ export function Hero() {
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (y) => setAtTop(y < 10));
 
+  // Merkezî logo: masaüstünde MetallicPaint (WebGL), dokunmatik/dar ekranda
+  // maliyetsiz statik beyaz logo. mounted olana kadar iç render edilmez
+  // (yanlış dal + gereksiz WebGL chunk yüklemesini önler).
+  const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    const mq = window.matchMedia("(max-width: 767px), (pointer: coarse)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const revealRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+  const logoWrapRef = useRef<HTMLDivElement>(null);
 
   const ribbonWords = [t("ribbon.a"), t("ribbon.b"), t("ribbon.c"), t("ribbon.d")];
 
@@ -79,8 +105,11 @@ export function Hero() {
       for (let i = 1; i <= HERO_FRAME_COUNT; i++) {
         images.push(new Image());
       }
-      const frameSrc = (i: number) =>
-        `${HERO_FRAME_DIR}/frame-${String(i).padStart(4, "0")}.jpg`;
+      // kare kaynağı: 0. kare yüksek çözünürlüklü PNG, kalanlar JPG dizisi.
+      const srcFor = (index: number) =>
+        index === 0
+          ? HERO_FIRST_FRAME
+          : `${HERO_FRAME_DIR}/frame-${String(index + 1).padStart(4, "0")}.jpg`;
 
       let currentFrame = 0;
 
@@ -152,7 +181,7 @@ export function Hero() {
       let cancelled = false;
 
       for (let i = 0; i < EAGER_WINDOW && i < HERO_FRAME_COUNT; i++) {
-        images[i].src = frameSrc(i + 1);
+        images[i].src = srcFor(i);
       }
 
       let nextIndex = EAGER_WINDOW;
@@ -160,7 +189,7 @@ export function Hero() {
         if (cancelled) return;
         let loaded = 0;
         while (nextIndex < HERO_FRAME_COUNT && loaded < BATCH_SIZE) {
-          images[nextIndex].src = frameSrc(nextIndex + 1);
+          images[nextIndex].src = srcFor(nextIndex);
           nextIndex++;
           loaded++;
         }
@@ -173,8 +202,10 @@ export function Hero() {
       if (images[0].complete) draw(0);
       else images[0].addEventListener("load", () => draw(0), { once: true });
 
-      // prefers-reduced-motion: scroll-jacking yok, kelimeler doğrudan görünür.
+      // prefers-reduced-motion: scroll-jacking yok, kelimeler doğrudan görünür,
+      // intro yok → header tam halinde kalsın.
       if (reduce) {
+        setHeroIntroProgress(1);
         return () => {
           cancelled = true;
           if (idleHandle !== null) cancelIdle(idleHandle);
@@ -199,6 +230,10 @@ export function Hero() {
           scrub: 0.5,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          // intro ilerlemesini yayınla (0=logo tam görünür … 1=intro bitti) →
+          // header ile logo fade'i tek kaynaktan senkron.
+          onUpdate: (self) =>
+            setHeroIntroProgress(Math.min(1, self.progress / INTRO_END)),
         },
       });
 
@@ -214,15 +249,31 @@ export function Hero() {
         0,
       );
 
+      // merkezî logo (ilk kareler) sönümlenerek hero yazısına yer açar
+      if (logoWrapRef.current) {
+        tl.to(
+          logoWrapRef.current,
+          {
+            opacity: 0,
+            scale: 0.94,
+            filter: "blur(6px)",
+            ease: "none",
+            duration: INTRO_END,
+          },
+          0,
+        );
+      }
+
       // başlık bloğu hafif dönüşten düzelir (ScrollReveal baseRotation)
       tl.fromTo(
         revealRef.current,
         { rotate: 4, transformOrigin: "0% 50%" },
         { rotate: 0, ease: "none", duration: 0.5 },
-        0,
+        0.12,
       );
 
-      // kelimeler scroll ile sırayla netleşir (opacity + blur), videoyla senkron
+      // kelimeler scroll ile sırayla netleşir (opacity + blur), logo çekildikten
+      // hemen sonra başlar → temiz devir-teslim
       tl.to(
         words,
         {
@@ -233,7 +284,7 @@ export function Hero() {
           duration: 0.2,
           stagger: 0.035,
         },
-        0.05,
+        0.12,
       );
 
       // CTA butonları da scroll ile (kelimelerden sonra) belirir
@@ -258,11 +309,11 @@ export function Hero() {
       id={SECTION_IDS.hero}
       className="relative h-dvh w-full overflow-hidden"
     >
-      {/* kareler yüklenene kadar görünecek poster (object-cover) */}
+      {/* kareler yüklenene kadar görünecek poster (yüksek çözünürlüklü ilk kare) */}
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url(/hero-poster.jpg)" }}
+        style={{ backgroundImage: `url(${HERO_FIRST_FRAME})` }}
       />
 
       {/* Scroll ile sürülen hero kare dizisi — her ekranı/oryantasyonu tam kaplar */}
@@ -280,6 +331,51 @@ export function Hero() {
 
       {/* içerik katmanı */}
       <div ref={contentRef} className="relative z-10 flex h-full flex-col">
+        {/* SIGNATURE — merkezî sıvı-metal logo (yalnız intro, hareket açıkken) */}
+        {!reduce && (
+          <div
+            ref={logoWrapRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 grid place-items-center will-change-[opacity,transform]"
+          >
+            <div className="aspect-square w-[min(110vw,800px)]">
+              {mounted ? (
+                isMobile ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src="/pengrim_beyaz.png"
+                    alt=""
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <MetallicPaint
+                    imageSrc="/pengrim_siyah.png"
+                    seed={42}
+                    scale={1}
+                    patternSharpness={0.7}
+                    noiseScale={0.4}
+                    speed={0.15}
+                    liquid={0.7}
+                    mouseAnimation={false}
+                    brightness={1.85}
+                    contrast={0.9}
+                    refraction={0.015}
+                    blur={0.078}
+                    chromaticSpread={0.8}
+                    fresnel={1}
+                    distortion={0.1}
+                    contour={0.1}
+                    lightColor="#ffffff"
+                    darkColor="#ffffff"
+                    tintColor="#b3edff"
+                    angle={90}
+                  />
+                )
+              ) : null}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-1 items-center pt-28 pb-10 sm:pt-32">
           <Container>
             <div className="max-w-3xl">
@@ -305,7 +401,7 @@ export function Hero() {
               {/* CTA — scroll ile belirir */}
               <div
                 ref={ctaRef}
-                className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"
+                className="hero-cta mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"
               >
                 <AnchorLink
                   href={`#${SECTION_IDS.contact}`}

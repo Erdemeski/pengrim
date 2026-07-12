@@ -115,20 +115,7 @@
     "eyebrow": "VİTRİN",
     "title": "Sahada nasıl göründüğü",
     "subtitle": "Örnek yerleşimler ve yayın kareleri. Görseller kurumsal kimlik sağlandığında güncellenecektir.",
-    "items": {
-      "a": {
-        "title": "LED çevre panosu",
-        "desc": "Orta saha kamerası planında marka."
-      },
-      "b": {
-        "title": "Kale arkası branding",
-        "desc": "Gol anında tekrar tekrar ekranda."
-      },
-      "c": {
-        "title": "Yayın bindirmesi",
-        "desc": "Skor ve istatistik grafiklerinde sponsor."
-      }
-    }
+    "placeholder": "Örnek karolar — gerçek maç kareleri yakında"
   },
   "cta": {
     "eyebrow": "HAZIR MISINIZ",
@@ -138,55 +125,12 @@
   },
   "contact": {
     "eyebrow": "İLETİŞİM",
-    "title": "Talebinizi iletin",
-    "subtitle": "Formu doldurun, 1 iş günü içinde size dönelim. Ne tür bir reklam alanı aradığınızı bilmemiz yeterli.",
-    "form": {
-      "optional": "opsiyonel",
-      "name": { "label": "Ad soyad", "placeholder": "Adınız ve soyadınız" },
-      "company": { "label": "Marka / şirket", "placeholder": "Şirket adınız" },
-      "email": { "label": "E-posta", "placeholder": "ornek@marka.com" },
-      "phone": { "label": "Telefon", "placeholder": "+90 5xx xxx xx xx" },
-      "requestType": { "label": "Talep türü", "placeholder": "Reklam alanı seçin" },
-      "league": { "label": "Maç / lig tercihi", "placeholder": "Örn. Süper Lig, Şampiyonlar Ligi" },
-      "budget": { "label": "Bütçe aralığı", "placeholder": "Bütçe seçin" },
-      "message": { "label": "Mesajınız", "placeholder": "Hedefinizi ve beklentinizi kısaca anlatın." },
-      "submit": "Talebi gönder",
-      "sending": "Gönderiliyor…",
-      "privacy": "Bilgileriniz yalnızca talebinize dönüş için kullanılır.",
-      "requestTypes": {
-        "led": "LED çevre panosu",
-        "static": "Stadyum içi envanter",
-        "broadcast": "Yayın görünürlüğü",
-        "package": "Paket / danışmanlık",
-        "other": "Diğer / emin değilim"
-      },
-      "budgets": {
-        "a": "100B ₺ altı",
-        "b": "100B – 500B ₺",
-        "c": "500B ₺ – 1M ₺",
-        "d": "1M ₺ üzeri",
-        "e": "Henüz emin değilim"
-      }
-    },
-    "validation": {
-      "nameMin": "Lütfen adınızı girin.",
-      "companyMin": "Marka veya şirket adı gerekli.",
-      "email": "Geçerli bir e-posta girin.",
-      "phoneMin": "Geçerli bir telefon girin.",
-      "requestType": "Bir reklam alanı türü seçin.",
-      "messageMin": "Birkaç kelimeyle talebinizi yazın."
-    },
-    "success": {
-      "title": "Talebiniz alındı",
-      "desc": "Teşekkürler! Ekibimiz en kısa sürede size dönecek.",
-      "again": "Yeni talep gönder"
-    },
-    "toast": {
-      "successTitle": "Gönderildi",
-      "successDesc": "Talebiniz bize ulaştı.",
-      "errorTitle": "Bir sorun oluştu",
-      "errorDesc": "Lütfen tekrar deneyin."
-    }
+    "title": "Doğrudan bize ulaşın",
+    "subtitle": "Kampanyanızı konuşalım. E-posta ya da telefonla yazın; size özel maç ve paket önerisiyle dönelim.",
+    "responseNote": "Genellikle 1 iş günü içinde yanıtlıyoruz",
+    "emailLabel": "E-posta",
+    "phoneLabel": "Telefon",
+    "addressLabel": "Konum"
   },
   "footer": {
     "tagline": "Markaları futbolun en görünür anlarıyla buluşturuyoruz.",
