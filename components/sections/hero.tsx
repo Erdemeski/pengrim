@@ -16,6 +16,7 @@ import { Container } from "@/components/layout/container";
 import { AnchorLink } from "@/components/layout/anchor-link";
 import { LedRibbon } from "./led-ribbon";
 import TiltedCard from "@/components/TiltedCard";
+import SideRays from "@/components/SideRays";
 import { buttonVariants } from "@/components/ui/button";
 import { SECTION_IDS } from "@/lib/constants";
 import { setHeroIntroProgress } from "@/lib/hero-intro-store";
@@ -61,6 +62,7 @@ export function Hero() {
   const ctaRef = useRef<HTMLDivElement>(null);
   const logoWrapRef = useRef<HTMLDivElement>(null);
   const logoInteractiveRef = useRef<HTMLDivElement>(null);
+  const sideRaysRef = useRef<HTMLDivElement>(null);
 
   const ribbonWords = [t("ribbon.a"), t("ribbon.b"), t("ribbon.c"), t("ribbon.d")];
 
@@ -246,6 +248,16 @@ export function Hero() {
         );
       }
 
+      // SideRays ışın katmanı logoyla birebir aynı sönümle kaybolur (video
+      // kare arka planı ile logo arasındaki katman, yalnız intro'da görünür).
+      if (sideRaysRef.current) {
+        tl.to(
+          sideRaysRef.current,
+          { opacity: 0, ease: "none", duration: INTRO_END },
+          0,
+        );
+      }
+
       // TiltedCard mouse etkileşimi görünmez haldeyken altındaki
       // başlık/CTA'ya tıklamayı engellemesin diye intro bitince kapatılır
       // (scrub geri sarılınca otomatik geri açılır).
@@ -323,6 +335,35 @@ export function Hero() {
         aria-hidden="true"
         className="absolute inset-0 bg-linear-to-b from-black/55 via-black/20 to-background"
       />
+
+      {/* SideRays — video kare arka planı ile merkezî logo arasında, yalnız
+          intro'da (logo görünürken) görünür. Dış katman mount'ta bir kerelik
+          "belirme" fade'i (framer-motion, GSAP'tan bağımsız); iç katman ise
+          logoyla birebir aynı sönümle (GSAP, yukarıdaki scrub timeline) kaybolur. */}
+      {!reduce && (
+        <motion.div
+          aria-hidden="true"
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div ref={sideRaysRef} className="absolute inset-0">
+            <SideRays
+              speed={2.5}
+              rayColor1="#dfbc4f"
+              rayColor2="#96c8ff"
+              intensity={2.2}
+              spread={2}
+              origin="top-right"
+              saturation={1.5}
+              blend={0.75}
+              falloff={1.6}
+              opacity={1}
+            />
+          </div>
+        </motion.div>
+      )}
 
       {/* içerik katmanı */}
       <div ref={contentRef} className="relative z-10 flex h-full flex-col">
