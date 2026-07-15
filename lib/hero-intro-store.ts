@@ -2,7 +2,7 @@
  * Hero "intro" evresi için minimal harici store (bağımlılık yok).
  *
  * Hero, pinlenen scroll-scrub zaman çizelgesinin ilk ~%18'inde (ilk kareler)
- * merkezî MetallicPaint logosunu gösterir; scroll ile logo sönümlenir ve hero
+ * merkezî statik logoyu gösterir; scroll ile logo sönümlenir ve hero
  * yazısına yer açılır. Header bu evrede cam arka planını + logosunu gizleyip
  * yalnız navigasyonu gösterir. İki bileşenin tek kaynaktan senkron kalması için
  * ilerleme buradan yayınlanır.

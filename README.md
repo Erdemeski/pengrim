@@ -58,7 +58,7 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 
 ### Görseller
 - **Vitrin (Showcase)** ReactBits **Masonry** galerisidir (`components/sections/showcase.tsx` → `showcase-gallery.tsx`). Görseller `public/showcase/` klasöründen okunur (`.jpg/.png/.webp/.avif`); klasör boşken on-brand nötr placeholder karolar (gradient SVG data-URI) gösterilir. Sayfa statik (SSG) üretildiğinden **yeni görseller `next build` sonrası** galeriye yansır.
-- **Hero** arka planı `public/hero-frames/` içindeki 130 karelik scroll-scrub dizisidir; ilk kare yüksek çözünürlüklü `public/pengrim-first-frame-edited.png`. Sayfa en üstteyken ortada `public/pengrim_siyah.png` **MetallicPaint** (WebGL sıvı-metal) ile gösterilir (mobilde maliyetsiz statik `pengrim_beyaz.png`).
+- **Hero** arka planı `public/hero-frames/` içindeki 130 karelik scroll-scrub dizisidir; ilk kare yüksek çözünürlüklü `public/pengrim-first-frame-edited.png`. Sayfa en üstteyken ortada statik `public/pengrim_beyaz.png` logosu gösterilir — tüm ekran boyutlarında/en-boy oranlarında.
 
 ### İletişim
 - Form kaldırıldı. `components/sections/contact.tsx` yalnızca e-posta + telefon + konumla iletişime yönlendiren bir bloktur (değerler `messages/*.json` → `footer.email/phone/address`).

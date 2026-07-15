@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useMemo, useRef, useState } from "react";
 import {
   motion,
   useReducedMotion,
@@ -16,17 +15,13 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Container } from "@/components/layout/container";
 import { AnchorLink } from "@/components/layout/anchor-link";
 import { LedRibbon } from "./led-ribbon";
+import TiltedCard from "@/components/TiltedCard";
 import { buttonVariants } from "@/components/ui/button";
 import { SECTION_IDS } from "@/lib/constants";
 import { setHeroIntroProgress } from "@/lib/hero-intro-store";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
-
-// WebGL sıvı-metal logo yalnızca istemcide (ssr:false) yüklenir.
-const MetallicPaint = dynamic(() => import("@/components/MetallicPaint"), {
-  ssr: false,
-});
 
 // public/hero-frames içindeki kare dizisi (herovideonew.mp4'ten 24fps çıkarıldı)
 const HERO_FRAME_DIR = "/hero-frames";
@@ -59,26 +54,13 @@ export function Hero() {
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (y) => setAtTop(y < 10));
 
-  // Merkezî logo: masaüstünde MetallicPaint (WebGL), dokunmatik/dar ekranda
-  // maliyetsiz statik beyaz logo. mounted olana kadar iç render edilmez
-  // (yanlış dal + gereksiz WebGL chunk yüklemesini önler).
-  const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-    const mq = window.matchMedia("(max-width: 767px), (pointer: coarse)");
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const revealRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const logoWrapRef = useRef<HTMLDivElement>(null);
+  const logoInteractiveRef = useRef<HTMLDivElement>(null);
 
   const ribbonWords = [t("ribbon.a"), t("ribbon.b"), t("ribbon.c"), t("ribbon.d")];
 
@@ -218,7 +200,7 @@ export function Hero() {
       );
       // FOUC olmadan başlangıç durumu (useGSAP layout-effect içinde çalışır)
       gsap.set(words, { opacity: 0, filter: "blur(10px)", y: 14 });
-      gsap.set(ctaRef.current, { opacity: 0, y: 20 });
+      gsap.set(ctaRef.current, { opacity: 0, y: 20, pointerEvents: "none" });
 
       const proxy = { frame: 0 };
       const tl = gsap.timeline({
@@ -263,6 +245,19 @@ export function Hero() {
           0,
         );
       }
+
+      // TiltedCard mouse etkileşimi görünmez haldeyken altındaki
+      // başlık/CTA'ya tıklamayı engellemesin diye intro bitince kapatılır
+      // (scrub geri sarılınca otomatik geri açılır).
+      if (logoInteractiveRef.current) {
+        tl.set(logoInteractiveRef.current, { pointerEvents: "none" }, INTRO_END);
+      }
+
+      // CTA butonları (Teklif alın / Nasıl çalışır?) merkezî logo ekrandayken
+      // tıklanamaz — logo, intro boyunca CTA'ların üzerinde (z-20) durduğu için
+      // görünmez olsalar da altlarındaki fare/dokunma etkileşimini keserlerdi.
+      // Intro bitip logo çekilince CTA'lar tekrar ulaşılabilir olur.
+      tl.set(ctaRef.current, { pointerEvents: "auto" }, INTRO_END);
 
       // başlık bloğu hafif dönüşten düzelir (ScrollReveal baseRotation)
       tl.fromTo(
@@ -331,47 +326,27 @@ export function Hero() {
 
       {/* içerik katmanı */}
       <div ref={contentRef} className="relative z-10 flex h-full flex-col">
-        {/* SIGNATURE — merkezî sıvı-metal logo (yalnız intro, hareket açıkken) */}
+        {/* SIGNATURE — merkezî statik beyaz logo (yalnız intro, hareket açıkken) */}
         {!reduce && (
           <div
             ref={logoWrapRef}
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 grid place-items-center will-change-[opacity,transform]"
+            className="pointer-events-none absolute inset-0 z-20 grid place-items-center"
           >
-            <div className="aspect-square w-[min(110vw,800px)]">
-              {mounted ? (
-                isMobile ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src="/pengrim_beyaz.png"
-                    alt=""
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <MetallicPaint
-                    imageSrc="/pengrim_siyah.png"
-                    seed={42}
-                    scale={1}
-                    patternSharpness={0.7}
-                    noiseScale={0.4}
-                    speed={0.15}
-                    liquid={0.7}
-                    mouseAnimation={false}
-                    brightness={1.85}
-                    contrast={0.9}
-                    refraction={0.015}
-                    blur={0.078}
-                    chromaticSpread={0.8}
-                    fresnel={1}
-                    distortion={0.1}
-                    contour={0.1}
-                    lightColor="#ffffff"
-                    darkColor="#ffffff"
-                    tintColor="#b3edff"
-                    angle={90}
-                  />
-                )
-              ) : null}
+            <div ref={logoInteractiveRef} className="pointer-events-auto">
+              <TiltedCard
+                imageSrc="/pengrim_beyaz.png"
+                altText=""
+                containerWidth="min(86vw, 760px)"
+                containerHeight="calc(min(86vw, 760px) * 0.2235)"
+                imageWidth="min(86vw, 760px)"
+                imageHeight="calc(min(86vw, 760px) * 0.2235)"
+                imageClassName="object-contain"
+                rotateAmplitude={15}
+                scaleOnHover={1.10}
+                showMobileWarning={false}
+                showTooltip={false}
+              />
             </div>
           </div>
         )}

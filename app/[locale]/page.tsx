@@ -26,7 +26,8 @@ export default async function HomePage({ params }: Props) {
         <HowItWorks />
         <Reach />
         <Showcase />
-        <CtaBand />
+        {/*         <CtaBand />
+ */}
         <Contact />
       </main>
       <SiteFooter />

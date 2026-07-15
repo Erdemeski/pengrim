@@ -37,13 +37,14 @@ export function Contact() {
                 title={t("title")}
                 subtitle={t("subtitle")}
               />
-              <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              {/*               <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-led opacity-60" />
                   <span className="relative inline-flex size-2 rounded-full bg-led" />
                 </span>
                 {t("responseNote")}
               </p>
+ */}
             </div>
 
             <div className="flex flex-col gap-3">

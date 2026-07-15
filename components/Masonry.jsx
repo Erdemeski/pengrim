@@ -88,6 +88,28 @@ const Masonry = ({
 
   const [containerRef, { width }] = useMeasure();
   const [imagesReady, setImagesReady] = useState(false);
+  const [inView, setInView] = useState(false);
+
+  // Galeri viewport'a girmeden giriş animasyonu tetiklenmesin (sayfa ilk
+  // açıldığında değil, kullanıcı Vitrin bölümüne scroll edince oynasın).
+  // Bir kez tetiklendikten sonra gözlemi bırakır — sonraki resize/relayout'lar
+  // (aşağıda hasMounted branch'i) normal şekilde anlık uygulanır.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getInitialPosition = item => {
     const containerRect = containerRef.current?.getBoundingClientRect();
@@ -148,33 +170,43 @@ const Masonry = ({
   const hasMounted = useRef(false);
 
   useLayoutEffect(() => {
-    if (!imagesReady) return;
+    if (!imagesReady || !grid.length) return;
+
+    // İlk yerleşimden önce (henüz reveal edilmemişken) kartları görünmez
+    // başlangıç konumlarında sabitler — inView henüz false olsa da grid
+    // hazır olur olmaz uygulanır, böylece reveal tetiklendiğinde ani bir
+    // sıçrama olmaz.
+    if (!hasMounted.current) {
+      grid.forEach(item => {
+        const selector = `[data-key="${item.id}"]`;
+        const start = getInitialPosition(item);
+        gsap.set(selector, {
+          opacity: 0,
+          x: start.x,
+          y: start.y,
+          width: item.w,
+          height: item.h,
+          ...(blurToFocus && { filter: 'blur(10px)' })
+        });
+      });
+    }
+
+    // Giriş animasyonu yalnızca galeri viewport'a girdiğinde tetiklenir.
+    if (!hasMounted.current && !inView) return;
 
     grid.forEach((item, index) => {
       const selector = `[data-key="${item.id}"]`;
       const animProps = { x: item.x, y: item.y, width: item.w, height: item.h };
 
       if (!hasMounted.current) {
-        const start = getInitialPosition(item);
-        gsap.fromTo(
-          selector,
-          {
-            opacity: 0,
-            x: start.x,
-            y: start.y,
-            width: item.w,
-            height: item.h,
-            ...(blurToFocus && { filter: 'blur(10px)' })
-          },
-          {
-            opacity: 1,
-            ...animProps,
-            ...(blurToFocus && { filter: 'blur(0px)' }),
-            duration: 0.8,
-            ease: 'power3.out',
-            delay: index * stagger
-          }
-        );
+        gsap.to(selector, {
+          opacity: 1,
+          ...animProps,
+          ...(blurToFocus && { filter: 'blur(0px)' }),
+          duration: 0.8,
+          ease: 'power3.out',
+          delay: index * stagger
+        });
       } else {
         gsap.to(selector, {
           ...animProps,
@@ -187,7 +219,7 @@ const Masonry = ({
 
     hasMounted.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grid, imagesReady, stagger, animateFrom, blurToFocus, duration, ease]);
+  }, [grid, imagesReady, inView, stagger, animateFrom, blurToFocus, duration, ease]);
 
   const handleMouseEnter = (id, element) => {
     if (scaleOnHover) {
