@@ -1,12 +1,12 @@
 {
   "meta": {
-    "title": "Pengrim — Futbol Reklamcılığı & Saha Kenarı Marka Görünürlüğü",
-    "description": "Pengrim, futbol maçlarında LED çevre panoları, stadyum içi envanter ve maç yayını görünürlüğünü markalarla buluşturur. Maç ve lig seçiminden raporlamaya kadar süreci uçtan uca yönetir."
+    "title": "Pengrim — Spor Reklamcılığı",
+    "description": "Pengrim, spor karşılaşmalarında LED çevre panoları, stadyum içi envanter ve karşılaşmaların yayını görünürlüğünü markalarla buluşturur. Maç ve lig seçiminden raporlamaya kadar süreci uçtan uca yönetir."
   },
   "nav": {
     "inventory": "Envanter",
     "how": "İş akışı",
-    "reach": "Neden futbol",
+    "reach": "Neden spor",
     "showcase": "Vitrin",
     "contact": "İletişim",
     "cta": "Teklif alın",
@@ -15,11 +15,11 @@
     "language": "Dil"
   },
   "hero": {
-    "eyebrow": "FUTBOL REKLAMCILIĞI",
+    "eyebrow": "SPOR REKLAMCILIĞI",
     "headline": "Markanızı sahanın kenarına taşıyın.",
     "subline": "Doğru maç, doğru lig, doğru kitle.",
     "ctaPrimary": "Teklif alın",
-    "ctaSecondary": "Nasıl çalışır?",
+    "ctaSecondary": "İşleyiş nasıl?",
     "ribbon": {
       "a": "LED ÇEVRE PANO",
       "b": "STADYUM ENVANTERİ",
@@ -89,9 +89,9 @@
     }
   },
   "reach": {
-    "eyebrow": "NEDEN FUTBOL",
+    "eyebrow": "NEDEN SPOR",
     "title": "Tek maç, milyonlarca temas",
-    "subtitle": "Futbol; markanızı aynı anda stadyumda, ekranda ve sosyal medyada görünür kılar.",
+    "subtitle": "Spor; markanızı aynı anda stadyumda, ekranda ve sosyal medyada görünür kılar.",
     "channels": {
       "tv": {
         "title": "TV yayını",
@@ -133,7 +133,7 @@
     "addressLabel": "Konum"
   },
   "footer": {
-    "tagline": "Markaları futbolun en görünür anlarıyla buluşturuyoruz.",
+    "tagline": "Markaları sporun en görünür anlarıyla buluşturuyoruz.",
     "navTitle": "Keşfet",
     "contactTitle": "İletişim",
     "email": "merhaba@pengrim.com",

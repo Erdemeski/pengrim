@@ -1,12 +1,12 @@
 {
   "meta": {
-    "title": "Pengrim — Football Advertising & Pitchside Brand Visibility",
-    "description": "Pengrim connects brands with LED perimeter boards, in-stadium inventory and live broadcast visibility at football matches. We run the whole process — from match and league selection to reporting — end to end."
+    "title": "Pengrim — Sport Advertising",
+    "description": "Pengrim connects brands with LED perimeter signage, stadium inventory, and broadcast visibility for sporting events. It manages the entire process, from match and league selection to reporting."
   },
   "nav": {
     "inventory": "Inventory",
     "how": "How it works",
-    "reach": "Why football",
+    "reach": "Why sports",
     "showcase": "Showcase",
     "contact": "Contact",
     "cta": "Get a quote",
@@ -15,7 +15,7 @@
     "language": "Language"
   },
   "hero": {
-    "eyebrow": "FOOTBALL ADVERTISING",
+    "eyebrow": "SPORT ADVERTISING",
     "headline": "Take your brand pitchside and on-screen.",
     "subline": "The right match, the right league, the right audience.",
     "ctaPrimary": "Get a quote",
@@ -89,9 +89,9 @@
     }
   },
   "reach": {
-    "eyebrow": "WHY FOOTBALL",
+    "eyebrow": "WHY SPORTS",
     "title": "One match, millions of impressions",
-    "subtitle": "Football makes your brand visible in the stadium, on screen and across social — all at once.",
+    "subtitle": "Sports makes your brand visible in the stadium, on screen and across social — all at once.",
     "channels": {
       "tv": {
         "title": "Live TV",
@@ -133,7 +133,7 @@
     "addressLabel": "Location"
   },
   "footer": {
-    "tagline": "We connect brands with football's most visible moments.",
+    "tagline": "We connect brands with sports' most visible moments.",
     "navTitle": "Explore",
     "contactTitle": "Contact",
     "email": "hello@pengrim.com",

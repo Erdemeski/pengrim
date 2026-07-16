@@ -17,6 +17,7 @@ import { AnchorLink } from "@/components/layout/anchor-link";
 import { LedRibbon } from "./led-ribbon";
 import TiltedCard from "@/components/TiltedCard";
 import SideRays from "@/components/SideRays";
+import { SparklesCore } from "@/components/ui/sparkles";
 import { buttonVariants } from "@/components/ui/button";
 import { SECTION_IDS } from "@/lib/constants";
 import { setHeroIntroProgress } from "@/lib/hero-intro-store";
@@ -374,20 +375,41 @@ export function Hero() {
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-20 grid place-items-center"
           >
-            <div ref={logoInteractiveRef} className="pointer-events-auto">
-              <TiltedCard
-                imageSrc="/pengrim_beyaz.png"
-                altText=""
-                containerWidth="min(86vw, 760px)"
-                containerHeight="calc(min(86vw, 760px) * 0.2235)"
-                imageWidth="min(86vw, 760px)"
-                imageHeight="calc(min(86vw, 760px) * 0.2235)"
-                imageClassName="object-contain"
-                rotateAmplitude={15}
-                scaleOnHover={1.10}
-                showMobileWarning={false}
-                showTooltip={false}
-              />
+            <div className="flex flex-col items-center">
+              <div ref={logoInteractiveRef} className="pointer-events-auto">
+                <TiltedCard
+                  imageSrc="/pengrim_beyaz.png"
+                  altText=""
+                  containerWidth="min(86vw, 760px)"
+                  containerHeight="calc(min(86vw, 760px) * 0.2235)"
+                  imageWidth="min(86vw, 760px)"
+                  imageHeight="calc(min(86vw, 760px) * 0.2235)"
+                  imageClassName="object-contain"
+                  rotateAmplitude={15}
+                  scaleOnHover={1.10}
+                  showMobileWarning={false}
+                  showTooltip={false}
+                />
+              </div>
+
+              {/* logo altındaki parıltı — logoyla aynı üst düzeyin (opacity/scale/blur
+                  GSAP tween'i) çocuğu olduğu için ayrı bir tween'e gerek kalmadan
+                  logoyla birebir aynı anda belirir/kaybolur. */}
+              <div className="relative mt-0 h-28 w-[min(72vw,600px)] sm:h-32">
+                <div className="absolute inset-x-[12%] top-0 h-px w-3/4 bg-linear-to-r from-transparent via-turf to-transparent" />
+                <div className="absolute inset-x-[12%] top-0 h-0.5 w-3/4 bg-linear-to-r from-transparent via-turf to-transparent blur-sm" />
+                <div className="absolute inset-x-[37%] top-0 h-px w-1/4 bg-linear-to-r from-transparent via-led to-transparent" />
+                <div className="absolute inset-x-[37%] top-0 h-0.75 w-1/4 bg-linear-to-r from-transparent via-led to-transparent blur-sm" />
+                <SparklesCore
+                  background="transparent"
+                  minSize={0.3}
+                  maxSize={1}
+                  speed={3}
+                  particleDensity={600}
+                  particleColor="#ffffff"
+                  className="h-full w-full mask-[radial-gradient(220px_90px_at_top,white_15%,transparent_75%)]"
+                />
+              </div>
             </div>
           </div>
         )}
