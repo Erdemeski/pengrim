@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Pengrim — Spor Reklamcılığı",
+    "title": "Pengrim | Spor Reklamcılığı",
     "description": "Pengrim, spor karşılaşmalarında LED çevre panoları, stadyum içi envanter ve karşılaşmaların yayını görünürlüğünü markalarla buluşturur. Maç ve lig seçiminden raporlamaya kadar süreci uçtan uca yönetir."
   },
   "nav": {
@@ -11,7 +11,6 @@
     "contact": "İletişim",
     "cta": "Teklif alın",
     "menu": "Menü",
-    "close": "Kapat",
     "language": "Dil"
   },
   "hero": {
@@ -28,40 +27,33 @@
     }
   },
   "trust": {
-    "eyebrow": "RAKAMLARLA PENGRIM",
-    "title": "Sahada kanıtlanmış erişim",
     "stats": {
       "reach": "sezonluk yayın erişimi",
       "matches": "kapsanan maç",
       "leagues": "lig & turnuva",
       "brands": "marka kampanyası"
     },
-    "note": "Örnek değerler — gerçek kampanya verileriyle güncellenecektir."
+    "note": "Örnek değerler. Gerçek kampanya verileriyle güncellenecektir."
   },
   "inventory": {
-    "eyebrow": "ENVANTER",
     "title": "Sahanın her karesi bir reklam alanı",
-    "subtitle": "Markanızı maçın akışına yerleştiriyoruz — yayında, tribünde ve ekranda.",
+    "subtitle": "Markanızı maçın akışına yerleştiriyoruz: yayında, tribünde ve ekranda.",
     "items": {
       "led": {
         "title": "LED çevre panoları",
-        "desc": "Saha kenarındaki dijital panolarda dönüşümlü, animasyonlu marka görünürlüğü — kameranın tam karşısında.",
-        "tag": "Canlı yayın"
+        "desc": "Saha kenarındaki dijital panolarda dönüşümlü, animasyonlu marka görünürlüğü. Kameranın tam karşısında."
       },
       "static": {
         "title": "Stadyum içi envanter",
-        "desc": "Kale arkası, tribün ve tünel brandingi; statik panolar ve stadyum içindeki tüm marka temas noktaları.",
-        "tag": "Stat içi"
+        "desc": "Kale arkası, tribün ve tünel brandingi; statik panolar ve stadyum içindeki tüm marka temas noktaları."
       },
       "broadcast": {
         "title": "Yayın görünürlüğü",
-        "desc": "TV ve dijital yayın akışında garantili marka süresi; kamera planlarına göre optimize edilmiş yerleşim.",
-        "tag": "TV & OTT"
+        "desc": "TV ve dijital yayın akışında garantili marka süresi; kamera planlarına göre optimize edilmiş yerleşim."
       },
       "package": {
         "title": "Paket & danışmanlık",
-        "desc": "Maç, lig ve kitleye göre kurgulanan kampanya paketleri; satın alma ve raporlamayı biz yönetelim.",
-        "tag": "Uçtan uca"
+        "desc": "Maç, lig ve kitleye göre kurgulanan kampanya paketleri; satın alma ve raporlamayı biz yönetelim."
       }
     }
   },
@@ -89,7 +81,6 @@
     }
   },
   "reach": {
-    "eyebrow": "NEDEN SPOR",
     "title": "Tek maç, milyonlarca temas",
     "subtitle": "Spor; markanızı aynı anda stadyumda, ekranda ve sosyal medyada görünür kılar.",
     "channels": {
@@ -112,22 +103,14 @@
     }
   },
   "showcase": {
-    "eyebrow": "VİTRİN",
     "title": "Sahada nasıl göründüğü",
     "subtitle": "Örnek yerleşimler ve yayın kareleri. Görseller kurumsal kimlik sağlandığında güncellenecektir.",
-    "placeholder": "Örnek karolar — gerçek maç kareleri yakında"
-  },
-  "cta": {
-    "eyebrow": "HAZIR MISINIZ",
-    "title": "Reklamınızı sahaya çıkaralım",
-    "subtitle": "Birkaç dakikada talebinizi iletin; ekibimiz size özel maç ve paket önerisiyle dönsün.",
-    "button": "Teklif alın"
+    "placeholder": "Örnek karolar, gerçek maç kareleri yakında"
   },
   "contact": {
     "eyebrow": "İLETİŞİM",
     "title": "Doğrudan bize ulaşın",
     "subtitle": "Kampanyanızı konuşalım. E-posta ya da telefonla yazın; size özel maç ve paket önerisiyle dönelim.",
-    "responseNote": "Genellikle 1 iş günü içinde yanıtlıyoruz",
     "emailLabel": "E-posta",
     "phoneLabel": "Telefon",
     "addressLabel": "Konum"
@@ -136,10 +119,9 @@
     "tagline": "Markaları sporun en görünür anlarıyla buluşturuyoruz.",
     "navTitle": "Keşfet",
     "contactTitle": "İletişim",
-    "email": "merhaba@pengrim.com",
+    "email": "info@pengrim.com",
     "phone": "+90 (212) 000 00 00",
     "address": "İstanbul, Türkiye",
-    "rights": "Tüm hakları saklıdır.",
-    "note": "Kurumsal kimlik ve görseller hazırlanıyor."
+    "rights": "Tüm hakları saklıdır."
   }
 }

@@ -4,6 +4,7 @@ import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { SectionHeading } from "@/components/layout/section-heading";
 import { GlassCard } from "@/components/effects/glass-card";
+import { IconChip } from "@/components/ui/icon-chip";
 import { SECTION_IDS } from "@/lib/constants";
 
 export function Contact() {
@@ -31,35 +32,25 @@ export function Contact() {
           />
 
           <div className="relative grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-16">
-            <div className="flex flex-col gap-6">
-              <SectionHeading
-                eyebrow={t("eyebrow")}
-                title={t("title")}
-                subtitle={t("subtitle")}
-              />
-              {/*               <p className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-led opacity-60" />
-                  <span className="relative inline-flex size-2 rounded-full bg-led" />
-                </span>
-                {t("responseNote")}
-              </p>
- */}
-            </div>
+            <SectionHeading
+              eyebrow={t("eyebrow")}
+              title={t("title")}
+              subtitle={t("subtitle")}
+            />
 
             <div className="flex flex-col gap-3">
               <a
                 href={`mailto:${email}`}
                 className="group flex items-center gap-4 rounded-2xl border border-border/60 bg-card/50 p-5 transition-all hover:border-led/50 hover:bg-card/80"
               >
-                <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-led/20 bg-led/10 text-led transition-colors group-hover:bg-led/20">
-                  <Mail className="size-5" />
-                </span>
+                <IconChip className="group-hover:bg-led/20">
+                  <Mail />
+                </IconChip>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                  <span className="block text-xs text-muted-foreground">
                     {t("emailLabel")}
                   </span>
-                  <span className="block truncate font-display text-lg font-bold tracking-tight text-foreground">
+                  <span className="block truncate text-lg font-semibold tracking-tight text-foreground">
                     {email}
                   </span>
                 </span>
@@ -70,14 +61,14 @@ export function Contact() {
                 href={telHref}
                 className="group flex items-center gap-4 rounded-2xl border border-border/60 bg-card/50 p-5 transition-all hover:border-led/50 hover:bg-card/80"
               >
-                <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-led/20 bg-led/10 text-led transition-colors group-hover:bg-led/20">
-                  <Phone className="size-5" />
-                </span>
+                <IconChip className="group-hover:bg-led/20">
+                  <Phone />
+                </IconChip>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                  <span className="block text-xs text-muted-foreground">
                     {t("phoneLabel")}
                   </span>
-                  <span className="block truncate font-display text-lg font-bold tracking-tight text-foreground">
+                  <span className="block truncate text-lg font-semibold tracking-tight text-foreground">
                     {phone}
                   </span>
                 </span>
@@ -85,14 +76,14 @@ export function Contact() {
               </a>
 
               <div className="flex items-center gap-4 rounded-2xl border border-border/40 bg-card/30 p-5">
-                <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-border/50 bg-background/40 text-muted-foreground">
-                  <MapPin className="size-5" />
-                </span>
+                <IconChip tone="muted">
+                  <MapPin />
+                </IconChip>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                  <span className="block text-xs text-muted-foreground">
                     {t("addressLabel")}
                   </span>
-                  <span className="block truncate font-display text-lg font-bold tracking-tight text-foreground">
+                  <span className="block truncate text-lg font-semibold tracking-tight text-foreground">
                     {address}
                   </span>
                 </span>

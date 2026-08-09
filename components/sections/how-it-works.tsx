@@ -4,6 +4,7 @@ import { Section } from "@/components/layout/section";
 import { SectionHeading } from "@/components/layout/section-heading";
 import { STEPS, SECTION_IDS } from "@/lib/constants";
 import { ICONS } from "@/lib/icons";
+import { IconChip } from "@/components/ui/icon-chip";
 import ScrollStack, { ScrollStackItem } from "@/components/ScrollStack";
 
 export function HowItWorks() {
@@ -39,7 +40,7 @@ export function HowItWorks() {
                 key={step.key}
                 itemClassName="glass-opaque mx-auto max-w-4xl !p-7 sm:!p-10"
               >
-                <span className="pointer-events-none absolute right-6 top-4 font-display text-7xl font-extrabold leading-none text-foreground/[0.05] sm:text-8xl">
+                <span className="pointer-events-none absolute right-6 top-4 font-display text-7xl font-extrabold leading-none text-foreground/5 sm:text-8xl">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="relative flex h-full flex-col justify-center gap-5 sm:flex-row sm:items-center sm:gap-8">
@@ -47,12 +48,12 @@ export function HowItWorks() {
                     <span className="font-mono text-2xl font-bold tabular-nums text-led sm:text-3xl">
                       {step.clock}
                     </span>
-                    <span className="grid size-14 shrink-0 place-items-center rounded-2xl border border-led/20 bg-led/10 text-led">
-                      <Icon className="size-7" />
-                    </span>
+                    <IconChip size="lg">
+                      <Icon />
+                    </IconChip>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-display text-xl font-bold uppercase tracking-tight sm:text-2xl">
+                    <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
                       {ts(`${step.key}.title`)}
                     </h3>
                     <p className="mt-2 max-w-xl leading-relaxed text-muted-foreground">

@@ -12,18 +12,21 @@ import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import "../globals.css";
 
+// latin-ext zorunlu: varsayılan dil Türkçe ve ı ğ ş İ ç ö ü yalnız bu alt
+// kümede. Eksik olduğunda bu harfler fallback fontun metrikleriyle çizilip
+// satır içinde göze çarpan bir karışıklık yaratıyordu.
 const display = Archivo({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-display",
   display: "swap",
 });
 const sans = Inter({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-sans",
   display: "swap",
 });
 const mono = JetBrains_Mono({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-mono",
   display: "swap",
 });

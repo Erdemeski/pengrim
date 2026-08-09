@@ -24,7 +24,7 @@ export function SiteFooter() {
           </div>
 
           <nav aria-label={tf("navTitle")}>
-            <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            <h3 className="text-sm font-semibold tracking-tight text-foreground">
               {tf("navTitle")}
             </h3>
             <ul className="mt-4 flex flex-col gap-2.5">
@@ -42,7 +42,7 @@ export function SiteFooter() {
           </nav>
 
           <div>
-            <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            <h3 className="text-sm font-semibold tracking-tight text-foreground">
               {tf("contactTitle")}
             </h3>
             <ul className="mt-4 flex flex-col gap-3 text-sm">
@@ -72,11 +72,10 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center">
+        <div className="mt-12 border-t border-border/60 pt-6 text-xs text-muted-foreground">
           <p>
             © {year} Pengrim. {tf("rights")}
           </p>
-          <p className="font-mono uppercase tracking-[0.2em]">{tf("note")}</p>
         </div>
       </Container>
     </footer>

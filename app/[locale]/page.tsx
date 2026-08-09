@@ -7,7 +7,6 @@ import { Inventory } from "@/components/sections/inventory";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { Reach } from "@/components/sections/reach";
 import { Showcase } from "@/components/sections/showcase";
-import { CtaBand } from "@/components/sections/cta-band";
 import { Contact } from "@/components/sections/contact";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -26,8 +25,6 @@ export default async function HomePage({ params }: Props) {
         <HowItWorks />
         <Reach />
         <Showcase />
-        {/*         <CtaBand />
- */}
         <Contact />
       </main>
       <SiteFooter />

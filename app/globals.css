@@ -318,14 +318,33 @@
   }
 }
 
-/* Hero intro FOUC koruması: başlık kelimeleri ve CTA, SSR HTML'inde gizli
-   başlar (GSAP scroll ile açar). Aksi halde yenilemede en üstteyken hero yazısı
-   bir an tam görünüp kayboluyordu. @layer dışı düz kural olduğundan utility
-   sınıflarınca ezilmez; GSAP inline opacity ise bunu geçersiz kılar.
+/* Hero intro FOUC koruması: başlık kelimeleri ve CTA gizli başlar (GSAP scroll
+   ile açar). Aksi halde yenilemede en üstteyken hero yazısı bir an tam görünüp
+   kayboluyordu. @layer dışı düz kural olduğundan utility sınıflarınca ezilmez;
+   GSAP inline opacity ise bunu geçersiz kılar.
+
+   Gizleme varsayılan (flash olmasın diye SSR HTML'inde de geçerli), ancak iki
+   kaçış kapısı var — aksi halde JS/GSAP başarısız olduğunda sayfanın ana
+   mesajı tamamen görünmez kalırdı:
+     1. scripting:none  → JS hiç çalışmıyor
+     2. [data-hero-failed] → JS çalıştı ama GSAP kurulumu tamamlanamadı
+        (hero.tsx'teki failsafe zamanlayıcı set eder)
    Hareket azaltıldığında scroll-jack yok → kelimeler doğrudan görünür. */
 .hero-word,
 .hero-cta {
   opacity: 0;
+}
+@media (scripting: none) {
+  .hero-word,
+  .hero-cta {
+    opacity: 1;
+  }
+}
+[data-hero-failed="true"] .hero-word,
+[data-hero-failed="true"] .hero-cta {
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-word,

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Pengrim — Sport Advertising",
+    "title": "Pengrim | Sport Advertising",
     "description": "Pengrim connects brands with LED perimeter signage, stadium inventory, and broadcast visibility for sporting events. It manages the entire process, from match and league selection to reporting."
   },
   "nav": {
@@ -11,7 +11,6 @@
     "contact": "Contact",
     "cta": "Get a quote",
     "menu": "Menu",
-    "close": "Close",
     "language": "Language"
   },
   "hero": {
@@ -28,47 +27,40 @@
     }
   },
   "trust": {
-    "eyebrow": "PENGRIM IN NUMBERS",
-    "title": "Proven reach on the pitch",
     "stats": {
       "reach": "seasonal broadcast reach",
       "matches": "matches covered",
       "leagues": "leagues & tournaments",
       "brands": "brand campaigns"
     },
-    "note": "Sample figures — to be updated with real campaign data."
+    "note": "Sample figures. To be updated with real campaign data."
   },
   "inventory": {
-    "eyebrow": "INVENTORY",
     "title": "Every frame of the pitch is ad space",
-    "subtitle": "We place your brand into the flow of the match — on air, in the stands, on screen.",
+    "subtitle": "We place your brand into the flow of the match: on air, in the stands, on screen.",
     "items": {
       "led": {
         "title": "LED perimeter boards",
-        "desc": "Rotating, animated brand visibility on pitchside digital boards — right in the camera's eye.",
-        "tag": "Live broadcast"
+        "desc": "Rotating, animated brand visibility on pitchside digital boards. Right in the camera's eye."
       },
       "static": {
         "title": "In-stadium inventory",
-        "desc": "Backboard, stand and tunnel branding; static boards and every brand touchpoint inside the venue.",
-        "tag": "On-site"
+        "desc": "Backboard, stand and tunnel branding; static boards and every brand touchpoint inside the venue."
       },
       "broadcast": {
         "title": "Broadcast visibility",
-        "desc": "Guaranteed brand time across TV and digital streams; placement optimized to camera angles.",
-        "tag": "TV & OTT"
+        "desc": "Guaranteed brand time across TV and digital streams; placement optimized to camera angles."
       },
       "package": {
         "title": "Packages & consulting",
-        "desc": "Campaign packages built around match, league and audience; let us handle buying and reporting.",
-        "tag": "End to end"
+        "desc": "Campaign packages built around match, league and audience; let us handle buying and reporting."
       }
     }
   },
   "how": {
     "eyebrow": "HOW IT WORKS",
     "title": "Matchday-ready in four steps",
-    "subtitle": "From brief to broadcast — we keep the process transparent and measurable.",
+    "subtitle": "From brief to broadcast, we keep the process transparent and measurable.",
     "steps": {
       "select": {
         "title": "Match & league selection",
@@ -76,11 +68,11 @@
       },
       "package": {
         "title": "Inventory & package",
-        "desc": "We build your campaign package — LED time, static inventory and broadcast visibility."
+        "desc": "We build your campaign package: LED time, static inventory and broadcast visibility."
       },
       "approve": {
         "title": "Purchase & approval",
-        "desc": "Contract, creative sign-off and placement plan — one point of contact, clear terms."
+        "desc": "Contract, creative sign-off and placement plan. One point of contact, clear terms."
       },
       "report": {
         "title": "Broadcast & reporting",
@@ -89,9 +81,8 @@
     }
   },
   "reach": {
-    "eyebrow": "WHY SPORTS",
     "title": "One match, millions of impressions",
-    "subtitle": "Sports makes your brand visible in the stadium, on screen and across social — all at once.",
+    "subtitle": "Sports makes your brand visible in the stadium, on screen and across social, all at once.",
     "channels": {
       "tv": {
         "title": "Live TV",
@@ -112,22 +103,14 @@
     }
   },
   "showcase": {
-    "eyebrow": "SHOWCASE",
     "title": "How it looks on the pitch",
     "subtitle": "Sample placements and broadcast frames. Imagery will be updated once brand assets are provided.",
-    "placeholder": "Placeholder tiles — real match frames coming soon"
-  },
-  "cta": {
-    "eyebrow": "READY",
-    "title": "Let's get your brand on the pitch",
-    "subtitle": "Send your brief in minutes — our team will come back with a tailored match and package proposal.",
-    "button": "Get a quote"
+    "placeholder": "Placeholder tiles, real match frames coming soon"
   },
   "contact": {
     "eyebrow": "CONTACT",
     "title": "Reach out directly",
     "subtitle": "Let's talk about your campaign. Email or call us and we'll come back with a tailored match and package proposal.",
-    "responseNote": "We usually reply within one business day",
     "emailLabel": "Email",
     "phoneLabel": "Phone",
     "addressLabel": "Location"
@@ -136,10 +119,9 @@
     "tagline": "We connect brands with sports' most visible moments.",
     "navTitle": "Explore",
     "contactTitle": "Contact",
-    "email": "hello@pengrim.com",
+    "email": "info@pengrim.com",
     "phone": "+90 (212) 000 00 00",
     "address": "Istanbul, Türkiye",
-    "rights": "All rights reserved.",
-    "note": "Brand identity and imagery in progress."
+    "rights": "All rights reserved."
   }
 }

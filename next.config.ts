@@ -9,9 +9,6 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.68.106", "10.12.5.238"],
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
-    ],
   },
 };
 

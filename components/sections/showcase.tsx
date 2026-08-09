@@ -68,11 +68,7 @@ export function Showcase() {
   return (
     <Section id={SECTION_IDS.showcase} className="overflow-hidden">
       <Container>
-        <SectionHeading
-          eyebrow={t("eyebrow")}
-          title={t("title")}
-          subtitle={t("subtitle")}
-        />
+        <SectionHeading title={t("title")} subtitle={t("subtitle")} />
 
         <div className="mt-10 sm:mt-12">
           <ShowcaseGallery
