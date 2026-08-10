@@ -471,13 +471,13 @@ export function Hero() {
               speed={2.5}
               rayColor1="#f0c96a"
               rayColor2="#f4f7f5"
-              intensity={2.2}
+              intensity={1}
               spread={2}
               origin="top-right"
-              saturation={1.5}
+              saturation={1}
               blend={0.75}
-              falloff={1.6}
-              opacity={1}
+              falloff={1}
+              opacity={0.5}
             />
           </div>
         </motion.div>

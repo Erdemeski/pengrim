@@ -55,6 +55,12 @@
         "title": "Paket & danışmanlık",
         "desc": "Maç, lig ve kitleye göre kurgulanan kampanya paketleri; satın alma ve raporlamayı biz yönetelim."
       }
+    },
+    "feature": {
+      "title": "",
+      "desc": "",
+      "hint": "",
+      "caption": "Kameranın gördüğü her açıda markanız sahada."
     }
   },
   "how": {

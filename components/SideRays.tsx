@@ -44,7 +44,7 @@ export default function SideRays({
   speed = 2.5,
   rayColor1 = "#EAB308",
   rayColor2 = "#96c8ff",
-  intensity = 2,
+  intensity = 1,
   spread = 2,
   origin = "top-right",
   tilt = 0,

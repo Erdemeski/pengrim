@@ -11,6 +11,7 @@ import {
   MonitorSmartphone,
   Share2,
   Users,
+  Expand,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const ICONS = {
   MonitorSmartphone,
   Share2,
   Users,
+  Expand,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

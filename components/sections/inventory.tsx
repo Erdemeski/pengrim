@@ -8,18 +8,22 @@ import { IconChip } from "@/components/ui/icon-chip";
 import { INVENTORY, SECTION_IDS } from "@/lib/constants";
 import { ICONS } from "@/lib/icons";
 import SpotlightCard from "@/components/SpotlightCard";
+import ScrollExpandCard from "@/components/ScrollExpandCard";
 
 /**
  * Bento yerleşimi: 4 içerik → tam 4 hücre, boş hücre yok. Geniş hücre satır
  * değiştirirken taraf değiştiriyor (7/5 → 5/7) — bu, bir üstteki istatistik
  * bandının ve bir alttaki adım listesinin eşit-kutu ritmini kırıyor.
  * İki hücre markanın kendi çekiminden gerçek görsel taşıyor.
+ *
+ * Beşinci hücre tek başına bir satır kaplar ve scroll ile tam ekrana açılır
+ * (bkz. ScrollExpandCard) — bento ritmi buradan çıkışı da bir ivmeyle yapıyor.
  */
 const CELLS: Record<string, { span: string; image?: string }> = {
-  led: { span: "lg:col-span-7", image: "/inventory-led.webp" },
+  led: { span: "lg:col-span-7", image: "/inventory-led-board.webp" },
   static: { span: "lg:col-span-5" },
   broadcast: { span: "lg:col-span-5" },
-  package: { span: "lg:col-span-7", image: "/inventory-package.webp" },
+  package: { span: "lg:col-span-7", image: "/inventory-stadium.webp" },
 };
 
 export function Inventory() {
@@ -52,10 +56,11 @@ export function Inventory() {
                       sizes="(max-width: 1024px) 100vw, 58vw"
                       className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                     />
-                    {/* metin kontrastı için scrim — görsel içeriğinden bağımsız */}
+                    {/* metin kontrastı için scrim — görselin üst yarısını serbest
+                        bırakacak kadar hafif; light modda beyaz perde daha da düşük */}
                     <div
                       aria-hidden="true"
-                      className="absolute inset-0 bg-linear-to-t from-background via-background/80 to-background/10"
+                      className="absolute inset-0 bg-linear-to-t from-background via-background/60 to-transparent dark:from-background/88 dark:via-background/55"
                     />
                     <div className="relative flex flex-col gap-3 p-6 sm:p-7">
                       <IconChip>
@@ -88,6 +93,29 @@ export function Inventory() {
               </Reveal>
             );
           })}
+
+          {/* Reveal ile sarılmaz: motion.div'in transform animasyonu tam da
+              açılmanın başladığı anda tetikleniyor ve ölçümü kaydırıyor. */}
+          <ScrollExpandCard
+            className="lg:col-span-12 -mb-12 sm:-mb-16 md:-mb-20"
+            src="/inventory-feature.webp"
+            /*             icon={
+                          <IconChip>
+                            <ICONS.Expand />
+                          </IconChip>
+                        }
+                        title={t("feature.title")}
+                        desc={t("feature.desc")}
+                        hint={t("feature.hint")}
+             */
+            icon={
+              <></>
+            }
+            title={t("feature.title")}
+            desc={t("feature.desc")}
+            hint={t("feature.hint")}
+            caption={t("feature.caption")}
+          />
         </div>
       </Container>
     </Section>
