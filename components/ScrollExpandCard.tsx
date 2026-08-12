@@ -4,6 +4,11 @@ import { useEffect, useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Image from "next/image";
 import { useReducedMotion } from "motion/react";
+import {
+  clearBallAnchorGeom,
+  setBallAnchorGeom,
+  solveObjectPosition,
+} from "@/lib/ball-anchor";
 
 /**
  * React Bits `ScrollExpand`in kart-çapalı uyarlaması.
@@ -68,6 +73,17 @@ export interface ScrollExpandCardProps {
   /** Dinlenmedeki görsel yakınlaştırması; açıldıkça 1'e döner. */
   zoom?: number;
   imageQuality?: number;
+  /**
+   * Görseldeki futbol topunu "çapa" olarak kullanır. İki şey yapar:
+   *  1. Ölçüm geometrisini `lib/ball-anchor` store'una yayınlar; `BallJourney`
+   *     topun ekran konumunu buradan türetir.
+   *  2. `object-position`'ı, top HER cihaz oranında kadrajda kalacak en küçük
+   *     kaydırmayla ayarlar — aksi halde dar/portre ekranlarda cover görselin
+   *     sağını kırpıyor ve top hiç görünmüyor.
+   * Bileşen başka yerde de kullanılabildiği için varsayılan kapalı: store tek
+   * sahipli kalsın ve diğer kullanımların kadrajı bozulmasın.
+   */
+  ballAnchor?: boolean;
 }
 
 export default function ScrollExpandCard({
@@ -83,10 +99,14 @@ export default function ScrollExpandCard({
   holdRatio = 0.28,
   zoom = 1.12,
   imageQuality = 85,
+  ballAnchor = false,
 }: ScrollExpandCardProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const winRef = useRef<HTMLDivElement | null>(null);
+  /** Görselin doğal boyutu — object-cover eşlemesi buna dayanır, sabit yazılmaz. */
+  const naturalRef = useRef({ w: 0, h: 0 });
+  const remeasureRef = useRef<(() => void) | null>(null);
   const reduce = useReducedMotion();
 
   useEffect(() => {
@@ -99,6 +119,7 @@ export default function ScrollExpandCard({
       top: 0,
       span: 0,
       side: 0,
+      frameLeft: 0,
       hold: 0,
       radius: 20,
       enabled: false,
@@ -122,6 +143,7 @@ export default function ScrollExpandCard({
       "--se-z",
       "--se-rest-o",
       "--se-cap-o",
+      "--se-op",
     ];
     const clear = () => {
       track.style.height = "";
@@ -146,6 +168,7 @@ export default function ScrollExpandCard({
 
       if (!s.enabled) {
         clear();
+        if (ballAnchor) clearBallAnchorGeom();
         return;
       }
 
@@ -156,14 +179,54 @@ export default function ScrollExpandCard({
       s.hold = Math.round(H * holdRatio);
       track.style.height = `${H + s.hold}px`;
       s.top = offsetTopOf(track);
-      s.side = Math.max(
-        0,
-        (vw - track.getBoundingClientRect().width) / 2
-      );
+      const rect = track.getBoundingClientRect();
+      s.side = Math.max(0, (vw - rect.width) / 2);
+      // Frame `left:50%` + `translateX(-50%)` ile track merkezine oturur; kendi
+      // genişliği vw olduğundan viewport'taki sol kenarı buradan çıkar. Yatay
+      // konum scroll'dan bağımsız olduğu için ölçümde cache'lenebilir.
+      s.frameLeft = rect.left + rect.width / 2 - vw / 2;
 
       frame.style.setProperty("--se-vw", `${vw}px`);
       frame.style.setProperty("--se-h", `${H}px`);
       lastKey = "";
+
+      if (ballAnchor) {
+        // onLoad kaçmış olabilir (önbellek/bfcache): doğal boyutu DOM'dan da dene.
+        if (!naturalRef.current.w) {
+          const img = frame.querySelector("img");
+          if (img && img.naturalWidth > 0) {
+            naturalRef.current = { w: img.naturalWidth, h: img.naturalHeight };
+          }
+        }
+        const n = naturalRef.current;
+        if (n.w > 0 && n.h > 0) {
+          // Kadrajı topa göre hizala; --se-op'u görsel `object-position` olarak
+          // okuyor. Geniş ekranlarda sonuç 50%/50% → kadraj hiç oynamaz.
+          const { px, py } = solveObjectPosition(vw, H, n.w, n.h);
+          frame.style.setProperty(
+            "--se-op",
+            `${(px * 100).toFixed(3)}% ${(py * 100).toFixed(3)}%`
+          );
+          setBallAnchorGeom({
+            enabled: true,
+            top: s.top,
+            span: s.span,
+            hold: s.hold,
+            zoom,
+            frameLeft: s.frameLeft,
+            side: s.side,
+            vw,
+            vh: H,
+            nw: n.w,
+            nh: n.h,
+            posX: px,
+            posY: py,
+          });
+        } else {
+          // Görsel henüz yüklenmedi; onLoad yeniden ölçüp yayınlayacak.
+          clearBallAnchorGeom();
+        }
+      }
     };
 
     const apply = () => {
@@ -239,6 +302,7 @@ export default function ScrollExpandCard({
       measure();
       apply();
     };
+    remeasureRef.current = remeasure;
     const ro = new ResizeObserver(() => {
       if (roTimer) return;
       roTimer = window.setTimeout(() => {
@@ -260,9 +324,11 @@ export default function ScrollExpandCard({
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      remeasureRef.current = null;
+      if (ballAnchor) clearBallAnchorGeom();
       clear();
     };
-  }, [reduce, restHeight, holdRatio, zoom]);
+  }, [reduce, restHeight, holdRatio, zoom, ballAnchor]);
 
   const frameStyle: CSSProperties = {
     width: "var(--se-vw, 100%)",
@@ -294,7 +360,17 @@ export default function ScrollExpandCard({
             fill
             sizes="100vw"
             quality={imageQuality}
-            className="object-cover"
+            /* --se-op yalnız ballAnchor açıkken yazılır; yoksa fallback 50%/50%
+               ile davranış eskisiyle birebir aynı kalır. */
+            className="object-cover [object-position:var(--se-op,50%_50%)]"
+            onLoad={(e) => {
+              const img = e.currentTarget;
+              naturalRef.current = {
+                w: img.naturalWidth,
+                h: img.naturalHeight,
+              };
+              remeasureRef.current?.();
+            }}
           />
         </div>
 

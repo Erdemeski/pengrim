@@ -6,6 +6,7 @@ import { STEPS, SECTION_IDS } from "@/lib/constants";
 import { ICONS } from "@/lib/icons";
 import { IconChip } from "@/components/ui/icon-chip";
 import ScrollStack, { ScrollStackItem } from "@/components/ScrollStack";
+import { BallJourney } from "@/components/effects/ball-journey";
 
 export function HowItWorks() {
   const t = useTranslations("how");
@@ -16,6 +17,10 @@ export function HowItWorks() {
       id={SECTION_IDS.how}
       className="border-y border-border/40 bg-muted/40"
     >
+      {/* Envanter fotoğrafından kopan top. Section'ın İLK çocuğu olması şart:
+          bölüm arka planının üstünde, ScrollStack kartlarının arkasında kalır. */}
+      <BallJourney />
+
       <Container>
         <SectionHeading
           eyebrow={t("eyebrow")}
@@ -26,6 +31,9 @@ export function HowItWorks() {
 
       <Container className="mt-6">
         <ScrollStack
+          /* z-10: topun (z-0) kartların arkasında kalması boyama sırasına
+             bırakılmaz, açıkça sabitlenir. */
+          className="relative z-10"
           useWindowScroll
           itemDistance={120}
           itemScale={0.025}
@@ -38,7 +46,7 @@ export function HowItWorks() {
             return (
               <ScrollStackItem
                 key={step.key}
-                itemClassName="glass-opaque mx-auto max-w-4xl !p-7 sm:!p-10"
+                itemClassName="glass-opaque glass-opaque-deep mx-auto max-w-4xl !p-7 sm:!p-10"
               >
                 <span className="pointer-events-none absolute right-6 top-4 font-display text-7xl font-extrabold leading-none text-foreground/5 sm:text-8xl">
                   {String(i + 1).padStart(2, "0")}

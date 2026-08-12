@@ -115,6 +115,9 @@ export function Inventory() {
             desc={t("feature.desc")}
             hint={t("feature.hint")}
             caption={t("feature.caption")}
+            /* Kadrajı görseldeki futbol topuna hizalar ve konumunu
+               BallJourney'e yayınlar. */
+            ballAnchor
           />
         </div>
       </Container>
