@@ -57,7 +57,7 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 `app/[locale]/layout.tsx` — Display: Archivo, Body: Inter, Mono: JetBrains Mono (`next/font`).
 
 ### Görseller
-- **Vitrin (Showcase)** ReactBits **Masonry** galerisidir (`components/sections/showcase.tsx` → `showcase-gallery.tsx`). Görseller `public/showcase/` klasöründen okunur (`.jpg/.png/.webp/.avif`); klasör boşken on-brand nötr placeholder karolar (gradient SVG data-URI) gösterilir. Sayfa statik (SSG) üretildiğinden **yeni görseller `next build` sonrası** galeriye yansır.
+- **Vitrin (Showcase)** ReactBits **DriftWall** duvarıdır (`components/sections/showcase.tsx` → `showcase-wall.tsx` → `components/DriftWall.tsx`). Karolar 16:9 sabit oranda, duvar tam genişlikte; üst kenar gradyanla açılır, alt kenar İletişim bölümünün çizgisine dayanır. Karoya tıklamak `showcase-lightbox.tsx` üzerinden FLIP geçişli tam ekran önizleme açar. Görseller `public/showcase/` klasöründen okunur (`.jpg/.png/.webp/.avif`) ve `next/image` ile optimize edilir; klasör boşken on-brand nötr placeholder karolar (gradient SVG data-URI) gösterilir. Sayfa statik (SSG) üretildiğinden **yeni görseller `next build` sonrası** galeriye yansır.
 - **Hero** arka planı `public/hero-frames/` içindeki 130 karelik scroll-scrub dizisidir; ilk kare yüksek çözünürlüklü `public/pengrim-first-frame-edited.png`. Sayfa en üstteyken ortada statik `public/pengrim_beyaz.png` logosu gösterilir — tüm ekran boyutlarında/en-boy oranlarında.
 
 ### İletişim
@@ -71,7 +71,8 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 app/[locale]/        layout + page (bölüm kompozisyonu)
 components/layout/   header (dinamik), footer, mobil nav, dil değiştirici, smooth-scroll
 components/sections/ hero, led-ribbon (signature), trust-stats, inventory,
-                     how-it-works, reach, showcase (+ showcase-gallery), cta-band, contact
+                     how-it-works, reach, showcase (+ showcase-wall, showcase-lightbox),
+                     cta-band, contact
 components/effects/  glass-card, marquee, reveal, count-up
 components/ui/        shadcn bileşenleri
 i18n/ · messages/     next-intl yapılandırması ve sözlükler

@@ -180,7 +180,14 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    overflow-x: hidden;
+    /* `clip`, `hidden` değil: `overflow-x: hidden` + `overflow-y: visible`
+       kombinasyonunda overflow-y `auto`ya çözülür, body bir scroll container
+       olur ve İÇİNDEKİ TÜM `position: sticky` elemanları çalışmaz hale gelir
+       (İş akışı bölümünün dalga arka planı buna bağlı). `clip` scroll container
+       yaratmadan kırpar. Yatay taşma güvencesi zaten html'deki `overflow-x:
+       hidden`tan geliyor (o viewport'a propagate olur), yani `clip`i
+       desteklemeyen eski tarayıcılarda da koruma sürüyor. */
+    overflow-x: clip;
     /* hafif atmosfer: floodlight ışıması */
     background-image:
       radial-gradient(60rem 40rem at 50% -10%, color-mix(in oklch, var(--brand-turf) 14%, transparent), transparent 70%),
@@ -232,11 +239,15 @@
       inset 0 1px 0 0 color-mix(in oklch, var(--foreground) 16%, transparent),
       0 24px 60px -28px rgb(0 0 0 / 0.7);
   }
+  /* İş akışı kartları — light: kağıt hissini bozmayacak kadar, arkadaki dalga
+     katmanının fısıltı gibi okunmasına yetecek kadar saydam. */
+  .glass-opaque-deep {
+    background: color-mix(in oklch, var(--card) 97%, transparent);
+  }
   /* İş akışı kartları: dark temada bir tık daha koyu yüzey. Arkasından geçen
-     topun gerçekten "arkada" kaldığı böyle okunuyor, metin kontrastı da artıyor.
-     Light tema kağıt hissini koruduğu için değişmez. */
+     topun gerçekten "arkada" kaldığı böyle okunuyor, metin kontrastı da artıyor. */
   .dark .glass-opaque-deep {
-    background: oklch(0.168 0.016 172);
+    background: oklch(16.726% 0.01518 171.931 / 0.966);
   }
 
   /* Her iki temada da koyu kalan liquid glass (header, koyu yüzeyler) */

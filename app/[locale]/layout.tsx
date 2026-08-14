@@ -10,6 +10,7 @@ import {
 import { routing } from "@/i18n/routing";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
+import GradualBlur from "@/components/GradualBlur";
 import "../globals.css";
 
 // latin-ext zorunlu: varsayılan dil Türkçe ve ı ğ ş İ ç ö ü yalnız bu alt
@@ -76,7 +77,27 @@ export default async function LocaleLayout({
           disableTransitionOnChange
         >
           <NextIntlClientProvider messages={messages}>
-            <SmoothScroll>{children}</SmoothScroll>
+            <SmoothScroll>
+              {children}
+              {/* Pencere alt kenarında kalıcı yumuşak geçiş.
+                  z-index style ile veriliyor: bileşen target="page" iken
+                  zIndex prop'una +100 ekleyip 1100'e çıkarıyor ve header
+                  (z-50), Sheet ile lightbox'ın (z-60+) üstünde kalıyordu.
+                  style, containerStyle'da zIndex'ten sonra spread edildiği
+                  için kazanır. pointer-events: none olduğundan altındaki
+                  form alanları ve bağlantılar tıklanabilir kalır. */}
+              <GradualBlur
+                target="page"
+                position="bottom"
+                height="3.5rem"
+                strength={2.5}
+                divCount={5}
+                curve="bezier"
+                exponential
+                opacity={1}
+                style={{ zIndex: 30 }}
+              />
+            </SmoothScroll>
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

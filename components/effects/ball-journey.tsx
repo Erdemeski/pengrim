@@ -54,6 +54,15 @@ const PARK_Y = 0.72;
 const FADE_IN0 = 0.72;
 const FADE_IN1 = 0.94;
 
+/**
+ * Yeşile geçiş penceresi — yolculuk ilerlemesi (q) üzerinden. Top fotoğraftan
+ * koptuğu (yani iş akışı bölümüne geçtiği) anda başlar, kartların sağında
+ * yükselirken tamamlanır: kartların arkasından sola geçmeden önce top tümüyle
+ * yeşildir. `q`'nun saf fonksiyonu olduğu için tersine scroll'da beyaza döner.
+ */
+const GREEN0 = 0;
+const GREEN1 = 0.15;
+
 /** Yolculuk boyunca uzaklaşma hissi: bitişte çap oranı + orta noktadaki çukur. */
 const DEPTH = 0.82;
 const DEPTH_DIP = 0.05;
@@ -235,16 +244,20 @@ export function BallJourney() {
       y: number,
       d: number,
       rot: number,
-      opacity: number
+      opacity: number,
+      green: number
     ) => {
       if (opacity <= 0.004 || y < -BOX || y > st.vh + BOX) {
         hide();
         return;
       }
       const k = d / BALL_PNG_FILL / BOX;
+      // `green` de anahtara girmek ZORUNDA: konum/dönme bir an sabitken
+      // (ör. park fazı) geçiş frame'i sessizce yutulurdu.
       const key =
         `${x.toFixed(1)}|${y.toFixed(1)}|` +
-        `${k.toFixed(4)}|${rot.toFixed(1)}|${opacity.toFixed(3)}`;
+        `${k.toFixed(4)}|${rot.toFixed(1)}|${opacity.toFixed(3)}|` +
+        `${green.toFixed(3)}`;
       if (key === st.key) return;
       st.key = key;
 
@@ -252,6 +265,7 @@ export function BallJourney() {
         `translate3d(${(x - BOX / 2).toFixed(2)}px, ${(y - BOX / 2).toFixed(2)}px, 0)` +
         ` scale(${k.toFixed(5)}) rotate(${rot.toFixed(2)}deg)`;
       host.style.opacity = opacity.toFixed(3);
+      host.style.setProperty("--ball-green", green.toFixed(3));
       if (st.hidden) {
         st.hidden = false;
         host.style.willChange = "transform, opacity";
@@ -363,7 +377,8 @@ export function BallJourney() {
           smoothstep(0, 40, y - a.clipTop) *
           smoothstep(0, 40, a.clipRight - x) *
           smoothstep(0, 40, x - a.clipLeft);
-        write(x, y, d, 0, smoothstep(FADE_IN0, FADE_IN1, a.open) * inside);
+        // Envanterdeyken top BEYAZ: yeşil katman tamamen saydam.
+        write(x, y, d, 0, smoothstep(FADE_IN0, FADE_IN1, a.open) * inside, 0);
         return;
       }
 
@@ -372,7 +387,16 @@ export function BallJourney() {
         // Yolculuk: uçlarda ivmesi sıfır olan yumuşatma → sıçramasız giriş/çıkış.
         const s = smootherstep(q);
         const p = samplePath(st.pts, s);
-        write(p.x, p.y, diameterAt(st.d0, s), sampleRoll(st.roll, s), 1);
+        // Yeşillik yolun DEĞİL, ham ilerlemenin fonksiyonu: yörünge
+        // yumuşatmasından (smootherstep) bağımsız, kendi penceresinde akar.
+        write(
+          p.x,
+          p.y,
+          diameterAt(st.d0, s),
+          sampleRoll(st.roll, s),
+          1,
+          smoothstep(GREEN0, GREEN1, q)
+        );
         return;
       }
 
@@ -380,7 +404,7 @@ export function BallJourney() {
       // asılı kalır, sonra bölümle birlikte yukarı kayıp ekrandan çıkar —
       // sonraki bölüme hiç geçmez.
       const y = Math.min(st.parkY, st.secBottom - y0 - st.parkR);
-      write(st.parkX, y, st.parkR * 2, st.roll[ROLL_SAMPLES], 1);
+      write(st.parkX, y, st.parkR * 2, st.roll[ROLL_SAMPLES], 1, 1);
     };
 
     const onScroll = () => {
@@ -458,6 +482,24 @@ export function BallJourney() {
         loading="eager"
         unoptimized
         className="block size-full"
+      />
+      {/* İş akışı bölümünün yeşil topu. Alttaki katman HER ZAMAN opak kalır ve
+          yalnız bu katman solar: iki silüet aynı olduğundan bileşke alfa geçiş
+          boyunca hiç değişmez → host'taki drop-shadow titremez, %50'de kenarda
+          hale/çift kontur oluşmaz. Host `fixed` olduğu için `absolute`ın
+          containing block'u hazır, ayrıca `relative` gerekmiyor. */}
+      <Image
+        src="/ball-768-green.webp"
+        alt=""
+        width={BOX}
+        height={BOX}
+        loading="eager"
+        /* Geçiş başlarken hazır olmalı (geç yüklenirse pop olur), ama ilk
+           boyamanın kaynaklarıyla yarışmasın. */
+        fetchPriority="low"
+        unoptimized
+        className="absolute inset-0 block size-full"
+        style={{ opacity: "var(--ball-green, 0)" }}
       />
     </div>
   );

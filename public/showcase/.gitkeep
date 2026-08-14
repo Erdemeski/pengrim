@@ -1,7 +1,8 @@
 # Vitrin galerisi görselleri
 #
 # Bu klasöre .jpg / .jpeg / .png / .webp / .avif uzantılı görseller ekleyin;
-# Vitrin (VİTRİN) bölümündeki Masonry galerisi otomatik olarak bunları gösterir.
+# Vitrin (VİTRİN) bölümündeki DriftWall duvarı otomatik olarak bunları gösterir.
+# Karolar 16:9 kırpılır — yatay kadrajlı görseller en iyi sonucu verir.
 # Klasör boşken nötr placeholder karolar görünür.
 #
 # NOT: Sayfa statik (SSG) üretildiğinden yeni görseller `next build` sonrası

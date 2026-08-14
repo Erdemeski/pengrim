@@ -111,7 +111,10 @@
   "showcase": {
     "title": "How it looks on the pitch",
     "subtitle": "Sample placements and broadcast frames. Imagery will be updated once brand assets are provided.",
-    "placeholder": "Placeholder tiles, real match frames coming soon"
+    "placeholder": "Placeholder tiles, real match frames coming soon",
+    "imageAlt": "Pitch placement image {n}",
+    "expand": "Enlarge image",
+    "close": "Close preview"
   },
   "contact": {
     "eyebrow": "CONTACT",

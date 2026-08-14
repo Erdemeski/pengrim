@@ -16,10 +16,9 @@ export function Contact() {
   const telHref = `tel:${phone.replace(/[^+\d]/g, "")}`;
 
   return (
-    <Section
-      id={SECTION_IDS.contact}
-      className="border-t border-border/40 bg-muted/40"
-    >
+    // Üst kenarda çizgi yok: Vitrin duvarı alt gradyanıyla buraya sönümlenerek
+    // bağlanıyor, keskin bir sınır o geçişi bozardı.
+    <Section id={SECTION_IDS.contact} className="bg-muted/40">
       <Container>
         <GlassCard
           strong

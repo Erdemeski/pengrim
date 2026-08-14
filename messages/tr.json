@@ -111,7 +111,10 @@
   "showcase": {
     "title": "Sahada nasıl göründüğü",
     "subtitle": "Örnek yerleşimler ve yayın kareleri. Görseller kurumsal kimlik sağlandığında güncellenecektir.",
-    "placeholder": "Örnek karolar, gerçek maç kareleri yakında"
+    "placeholder": "Örnek karolar, gerçek maç kareleri yakında",
+    "imageAlt": "Saha yerleşimi görseli {n}",
+    "expand": "Görseli büyüt",
+    "close": "Önizlemeyi kapat"
   },
   "contact": {
     "eyebrow": "İLETİŞİM",

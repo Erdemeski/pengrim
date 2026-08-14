@@ -7,6 +7,7 @@ import { ICONS } from "@/lib/icons";
 import { IconChip } from "@/components/ui/icon-chip";
 import ScrollStack, { ScrollStackItem } from "@/components/ScrollStack";
 import { BallJourney } from "@/components/effects/ball-journey";
+import { WorkflowWaves } from "@/components/effects/workflow-waves";
 
 export function HowItWorks() {
   const t = useTranslations("how");
@@ -15,10 +16,18 @@ export function HowItWorks() {
   return (
     <Section
       id={SECTION_IDS.how}
-      className="border-y border-border/40 bg-muted/40"
+      /* isolate: bölümü stacking context yapar; WorkflowWaves'in `-z-10`
+         katmanı böylece bölümün KENDİ arka planının üstünde, diğer her şeyin
+         altında kalır. `isolation` fixed için containing block yaratmadığından
+         BallJourney'in viewport referansı bozulmaz. */
+      className="isolate border-y border-border/40 bg-muted/40"
     >
-      {/* Envanter fotoğrafından kopan top. Section'ın İLK çocuğu olması şart:
-          bölüm arka planının üstünde, ScrollStack kartlarının arkasında kalır. */}
+      {/* Bölümün sticky dalga arka planı — en altta (-z-10). */}
+      <WorkflowWaves />
+
+      {/* Envanter fotoğrafından kopan top. ScrollStack'ten ÖNCE gelmesi ve
+          ScrollStack alt ağacının atası olmaması şart: dalga katmanının
+          üstünde, kartların arkasında kalır. */}
       <BallJourney />
 
       <Container>
