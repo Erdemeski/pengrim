@@ -88,6 +88,25 @@ const columnFactor = (index: number, variance: number): number => {
   return 1 + variance * pseudo;
 };
 
+const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+
+// Ardışık sütunların başlangıç indeksini birbirinden mümkün olduğunca uzak
+// tutan bir adım seçer: altın oran civarında, items.length ile aralarında
+// asal bir tam sayı. Sabit "1 ya da 3" seçimi (eski sürüm) items.length 3'e
+// bölündüğünde stride=1'e düşüyor ve komşu sütunlar yalnızca bir kayma farkla
+// aynı görselleri taşıyordu — kayan duvarda yan yana aynı fotoğraflar sık sık
+// denk geliyordu.
+const pickStride = (n: number): number => {
+  if (n <= 3) return 1;
+  const ideal = Math.round(n * 0.6180339887);
+  for (let d = 0; d < n; d++) {
+    for (const cand of d === 0 ? [ideal] : [ideal - d, ideal + d]) {
+      if (cand > 1 && cand < n && gcd(cand, n) === 1) return cand;
+    }
+  }
+  return 1;
+};
+
 // Sınıf dizileri prop'lardan bağımsız — her render'da yeniden kurulmaları için
 // bir sebep yok, modül düzeyine alındı.
 const TILE_CLASS = cx(
@@ -286,9 +305,7 @@ const DriftWall = ({
   const columnItems = useMemo<DriftWallItem[][]>(() => {
     if (!items.length) return [];
     const perCol = Math.max(1, Math.min(itemsPerColumn, items.length));
-    // items.length ile aralarında asal olmayan bir adım sütunları birbirinin
-    // kopyası yapardı; 3 ve 1 kombinasyonu pratikte yeterince ayrıştırıyor.
-    const stride = items.length % 3 === 0 ? 1 : 3;
+    const stride = pickStride(items.length);
     return Array.from({ length: columns }, (_, c) =>
       Array.from(
         { length: perCol },

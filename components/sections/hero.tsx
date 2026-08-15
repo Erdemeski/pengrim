@@ -90,6 +90,7 @@ export function Hero() {
   const logoWrapRef = useRef<HTMLDivElement>(null);
   const logoInteractiveRef = useRef<HTMLDivElement>(null);
   const sideRaysRef = useRef<HTMLDivElement>(null);
+  const scrollHintRef = useRef<HTMLDivElement>(null);
   // GSAP kurulumu tamamlandı mı — failsafe bunun üzerinden karar verir.
   const gsapReadyRef = useRef(false);
 
@@ -424,6 +425,16 @@ export function Hero() {
         0,
       );
 
+      // Scroll ipucu oku — yalnız pinli zaman çizelgesinin ilk birkaç karesinde
+      // görünür, kullanıcı kaydırmaya başlar başlamaz sönümlenir.
+      if (scrollHintRef.current) {
+        tl.to(
+          scrollHintRef.current,
+          { opacity: 0, ease: "none", duration: 0.05 },
+          0,
+        );
+      }
+
       // merkezî logo (ilk kareler) sönümlenerek hero yazısına yer açar
       if (logoWrapRef.current) {
         tl.to(
@@ -710,6 +721,31 @@ export function Hero() {
             </div>
           </Container>
         </div>
+
+        {/* Scroll ipucu — LED şeridin üstünde ortalanmış, ok ucu (gövdesiz).
+            Yalnız hero'nun ilk birkaç scroll karesinde görünür, kaydırma
+            başlar başlamaz GSAP tween'i ile sönümlenir (yukarıda kurulu). */}
+        {!reduce && (
+          <div
+            ref={scrollHintRef}
+            aria-hidden="true"
+            className="pointer-events-none z-10 flex justify-center pb-3 sm:pb-4"
+          >
+            <svg
+              viewBox="0 0 32 16"
+              className="h-4 w-8 animate-bounce text-white/70 sm:h-5 sm:w-10"
+            >
+              <path
+                d="M2 2 L16 14 L30 2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        )}
 
         {/* SIGNATURE şerit */}
         <motion.div

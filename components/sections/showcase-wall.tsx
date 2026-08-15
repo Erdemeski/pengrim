@@ -125,7 +125,7 @@ export function ShowcaseWall({
         perspective={1100}
         depth={20}
         speed={16}
-        variance={0.35}
+        variance={0.75}
         direction="up"
         parallax={0.25}
         lift={40}
