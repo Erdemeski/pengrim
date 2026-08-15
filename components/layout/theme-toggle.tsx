@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useHydrated } from "@/lib/use-hydrated";
 
 export function ThemeToggle({ className }: { className?: string }) {
+  const t = useTranslations("nav");
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   const isDark = resolvedTheme === "dark";
 
@@ -18,7 +19,11 @@ export function ThemeToggle({ className }: { className?: string }) {
       size="icon"
       className={className}
       aria-label={
-        mounted ? (isDark ? "Açık temaya geç" : "Koyu temaya geç") : "Tema değiştir"
+        mounted
+          ? isDark
+            ? t("themeToLight")
+            : t("themeToDark")
+          : t("theme")
       }
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >

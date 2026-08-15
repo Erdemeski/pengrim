@@ -11,7 +11,11 @@
     "contact": "İletişim",
     "cta": "Teklif alın",
     "menu": "Menü",
-    "language": "Dil"
+    "close": "Kapat",
+    "language": "Dil",
+    "theme": "Tema",
+    "themeToLight": "Açık temaya geç",
+    "themeToDark": "Koyu temaya geç"
   },
   "hero": {
     "eyebrow": "SPOR REKLAMCILIĞI",

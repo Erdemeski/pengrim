@@ -1,9 +1,24 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useReducedMotion } from "motion/react";
-import GradientWaves from "@/components/GradientWaves";
+import { useHydrated } from "@/lib/use-hydrated";
+import { prewarm } from "@/lib/prewarm";
+
+/**
+ * OGL + ~400 satırlık raymarch shader'ı ilk bundle'dan çıkarır. `ssr: false`
+ * burada tamamen risksiz: `WorkflowWaves` zaten hydration'dan önce `null`
+ * döndüğü için sunucu çıktısı değişmiyor.
+ *
+ * Chunk, sayfa açılır açılmaz boşta indiriliyor (aşağıdaki effect): kullanıcı
+ * hero'nun 1.6vh'lik pin mesafesini geçip bu bölüme geldiğinde modül çoktan
+ * önbellekte olur → pop-in yok.
+ */
+const GradientWaves = dynamic(() => import("@/components/GradientWaves"), {
+  ssr: false,
+});
 
 /**
  * İş akışı bölümünün arka planındaki dalga katmanı.
@@ -60,23 +75,16 @@ const PALETTE = {
   },
 } as const;
 
-/**
- * Hydration tamamlandı mı. `useSyncExternalStore` sunucu snapshot'ı (false) ile
- * hydration'ı garanti eşler; `useState` + `useEffect` kalıbının aksine ne
- * mismatch ne de cascading render riski var.
- */
-const NEVER_CHANGES = () => () => {};
-const useHydrated = () =>
-  useSyncExternalStore(
-    NEVER_CHANGES,
-    () => true,
-    () => false,
-  );
-
 export function WorkflowWaves() {
   const { resolvedTheme } = useTheme();
   const reduceMotion = useReducedMotion();
   const hydrated = useHydrated();
+
+  // Hareket azaltmada bileşen hiç mount edilmiyor → chunk'ı da indirme.
+  useEffect(() => {
+    if (reduceMotion) return;
+    prewarm("gradient-waves", () => import("@/components/GradientWaves"));
+  }, [reduceMotion]);
 
   // Hydration'dan önce render edilmez: tema (ve hareket tercihi) ancak
   // istemcide çözülüyor. Hareket azaltma tercihinde efekt hiç mount edilmez;

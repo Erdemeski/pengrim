@@ -17,6 +17,14 @@ interface SideRaysProps {
   blend?: number;
   falloff?: number;
   opacity?: number;
+  /**
+   * Render döngüsünü durdurur — WebGL context'e DOKUNMADAN. Katman görünmez
+   * hale geldiğinde (hero intro'su bittiğinde) bileşeni söküp takmak yerine
+   * bunu kullanıyoruz: sökmek her eşik geçişinde yeni bir GL context kurulumu
+   * + `WEBGL_lose_context` yıkımı demekti ve tek başına kare düşürüyordu.
+   * `DriftWall` da aynı kalıbı izliyor.
+   */
+  paused?: boolean;
   className?: string;
 }
 
@@ -52,9 +60,15 @@ export default function SideRays({
   blend = 0.75,
   falloff = 2.0,
   opacity = 1.0,
+  paused = false,
   className = "",
 }: SideRaysProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // `paused` bilerek aşağıdaki kurulum effect'inin bağımlılık dizisinde DEĞİL:
+  // o dizi her değiştiğinde tüm GL context yeniden kuruluyor. Döngüyü ref +
+  // ayrı bir effect üzerinden yönetiyoruz.
+  const pausedRef = useRef(paused);
+  const resumeRef = useRef<(() => void) | null>(null);
   const uniformsRef = useRef<Record<string, { value: number | number[] }> | null>(null);
   const rendererRef = useRef<Renderer | null>(null);
   const animationIdRef = useRef<number | null>(null);
@@ -213,19 +227,43 @@ void main() {
         uniforms.iResolution.value = [w * renderer.dpr, h * renderer.dpr];
       };
 
+      // Duraklatma sırasında geçen süre `iTime`'a yazılmaz: aksi halde devam
+      // ederken shader fazı duraklama süresi kadar sıçrar. Katman o anda zaten
+      // görünmez olsa da faz sürekliliğini korumak bedava.
+      let elapsed = 0;
+      let lastT = -1;
+
       const loop = (t: number) => {
         if (!rendererRef.current || !uniformsRef.current || !meshRef.current) return;
-        uniforms.iTime.value = t * 0.001;
+        if (lastT < 0) lastT = t;
+        elapsed += t - lastT;
+        lastT = t;
+        uniforms.iTime.value = elapsed * 0.001;
         try {
           renderer.render({ scene: mesh });
-          animationIdRef.current = requestAnimationFrame(loop);
         } catch {
           return;
+        }
+        if (pausedRef.current) {
+          // Son kare çizili kalır; yeni kare planlanmaz. lastT sıfırlanır ki
+          // devam ederken aradaki boşluk `elapsed`'e eklenmesin.
+          animationIdRef.current = null;
+          lastT = -1;
+          return;
+        }
+        animationIdRef.current = requestAnimationFrame(loop);
+      };
+
+      resumeRef.current = () => {
+        if (animationIdRef.current === null && rendererRef.current) {
+          animationIdRef.current = requestAnimationFrame(loop);
         }
       };
 
       window.addEventListener("resize", updateSize);
       updateSize();
+      // Duraklatılmış başlasa bile bir kare çizilsin (boş canvas kalmasın);
+      // loop kendi içinde ikinci kareyi planlamayacaktır.
       animationIdRef.current = requestAnimationFrame(loop);
 
       cleanupFunctionRef.current = () => {
@@ -233,6 +271,7 @@ void main() {
           cancelAnimationFrame(animationIdRef.current);
           animationIdRef.current = null;
         }
+        resumeRef.current = null;
         window.removeEventListener("resize", updateSize);
         if (renderer) {
           try {
@@ -259,6 +298,12 @@ void main() {
       }
     };
   }, [isVisible, speed, rayColor1, rayColor2, intensity, spread, origin, tilt, saturation, blend, falloff, opacity]);
+
+  // Döngü kontrolü — GL context'i yeniden kurmadan.
+  useEffect(() => {
+    pausedRef.current = paused;
+    if (!paused) resumeRef.current?.();
+  }, [paused]);
 
   useEffect(() => {
     if (!uniformsRef.current) return;

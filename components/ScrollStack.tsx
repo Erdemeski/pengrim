@@ -1,7 +1,22 @@
 "use client";
 import React, { useLayoutEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import Lenis from 'lenis';
+/**
+ * Yerel fork notu (upstream React Bits'ten tek sapma):
+ *
+ * Upstream'in `!useWindowScroll` dalındaki İKİNCİ Lenis örneği kaldırıldı.
+ * Sayfada zaten kök bir Lenis var (`SmoothScroll`) ve bu proje bileşeni
+ * yalnızca `useWindowScroll` ile kullanıyor; ikinci motor hem çakışma riskiydi
+ * hem de `lenis` paketini boşuna bundle'a sokuyordu. Konteyner modu korunuyor,
+ * ama kendi scroll motorunu kurmadan konteynerin native scroll'unu dinleyerek.
+ *
+ * Scroll matematiği ve ölçüm sırası upstream ile birebir aynı bırakıldı.
+ * (Kart ofsetlerini kare başına bir kez yerine önbelleğe alma denendi ve GERİ
+ * ALINDI: ofsetler *belge* koordinatı ve hero'nun ScrollTrigger `pin: true`
+ * spacer'ı belge yüksekliğini ScrollStack ölçtükten SONRA değiştiriyor →
+ * önbellek kalıcı olarak yanlış kalıp kartları bölümün altında iç içe
+ * yığıyordu.)
+ */
 
 export interface ScrollStackItemProps {
   itemClassName?: string;
@@ -19,6 +34,13 @@ export const ScrollStackItem: React.FC<ScrollStackItemProps> = ({ children, item
     {children}
   </div>
 );
+
+type CardTransform = {
+  translateY: number;
+  scale: number;
+  rotation: number;
+  blur: number;
+};
 
 interface ScrollStackProps {
   className?: string;
@@ -53,11 +75,8 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
 }) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stackCompletedRef = useRef(false);
-  const animationFrameRef = useRef<number | null>(null);
-  const lenisRef = useRef<Lenis | null>(null);
   const cardsRef = useRef<HTMLElement[]>([]);
-  const lastTransformsRef = useRef(new Map<number, any>());
-  const isUpdatingRef = useRef(false);
+  const lastTransformsRef = useRef(new Map<number, CardTransform>());
 
   const calculateProgress = useCallback((scrollTop: number, start: number, end: number) => {
     if (scrollTop < start) return 0;
@@ -72,21 +91,19 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
     return parseFloat(value as string);
   }, []);
 
+  /**
+   * Pencere modunda scrollY/innerHeight planlayıcıdan gelir — kare başına tek
+   * okuma. Konteyner modunda (bu projede kullanılmıyor) konteynerden okunur.
+   */
   const getScrollData = useCallback(() => {
     if (useWindowScroll) {
-      return {
-        scrollTop: window.scrollY,
-        containerHeight: window.innerHeight,
-        scrollContainer: document.documentElement
-      };
-    } else {
-      const scroller = scrollerRef.current;
-      return {
-        scrollTop: scroller ? scroller.scrollTop : 0,
-        containerHeight: scroller ? scroller.clientHeight : 0,
-        scrollContainer: scroller
-      };
+      return { scrollTop: window.scrollY, containerHeight: window.innerHeight };
     }
+    const scroller = scrollerRef.current;
+    return {
+      scrollTop: scroller ? scroller.scrollTop : 0,
+      containerHeight: scroller ? scroller.clientHeight : 0
+    };
   }, [useWindowScroll]);
 
   const getElementOffset = useCallback(
@@ -107,25 +124,24 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
     [useWindowScroll]
   );
 
-  const updateCardTransforms = useCallback(() => {
-    if (!cardsRef.current.length || isUpdatingRef.current) return;
+  const updateCardTransforms = useCallback(
+    () => {
+      if (!cardsRef.current.length) return;
 
-    isUpdatingRef.current = true;
+      const { scrollTop, containerHeight } = getScrollData();
+      const stackPositionPx = parsePercentage(stackPosition, containerHeight);
+      const scaleEndPositionPx = parsePercentage(scaleEndPosition, containerHeight);
 
-    const { scrollTop, containerHeight, scrollContainer } = getScrollData();
-    const stackPositionPx = parsePercentage(stackPosition, containerHeight);
-    const scaleEndPositionPx = parsePercentage(scaleEndPosition, containerHeight);
+      const endElement = useWindowScroll
+        ? (document.querySelector('.scroll-stack-end') as HTMLElement | null)
+        : (scrollerRef.current?.querySelector('.scroll-stack-end') as HTMLElement | null);
+      const endElementTop = endElement ? getElementOffset(endElement) : 0;
 
-    const endElement = useWindowScroll
-      ? (document.querySelector('.scroll-stack-end') as HTMLElement | null)
-      : (scrollerRef.current?.querySelector('.scroll-stack-end') as HTMLElement | null);
+      // Tüm kart layout offset'lerini transform YAZMADAN önce topluca oku
+      // (okuma/yazma serpiştirilirse reflow thrash olur).
+      const cardTops = cardsRef.current.map(c => (c ? getElementOffset(c) : 0));
 
-    const endElementTop = endElement ? getElementOffset(endElement) : 0;
-
-    // Tüm kart layout offset'lerini transform YAZMADAN önce topluca oku (reflow thrash önler)
-    const cardTops = cardsRef.current.map(c => (c ? getElementOffset(c) : 0));
-
-    cardsRef.current.forEach((card, i) => {
+      cardsRef.current.forEach((card, i) => {
       if (!card) return;
 
       const cardTop = cardTops[i];
@@ -199,24 +215,24 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
           stackCompletedRef.current = false;
         }
       }
-    });
-
-    isUpdatingRef.current = false;
-  }, [
-    itemScale,
-    itemStackDistance,
-    stackPosition,
-    scaleEndPosition,
-    baseScale,
-    rotationAmount,
-    blurAmount,
-    useWindowScroll,
-    onStackComplete,
-    calculateProgress,
-    parsePercentage,
-    getScrollData,
-    getElementOffset
-  ]);
+      });
+    },
+    [
+      itemScale,
+      itemStackDistance,
+      stackPosition,
+      scaleEndPosition,
+      baseScale,
+      rotationAmount,
+      blurAmount,
+      onStackComplete,
+      calculateProgress,
+      parsePercentage,
+      getScrollData,
+      getElementOffset,
+      useWindowScroll
+    ]
+  );
 
   const scrollRafRef = useRef<number | null>(null);
 
@@ -230,46 +246,6 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
       updateCardTransforms();
     });
   }, [updateCardTransforms]);
-
-  const setupLenis = useCallback(() => {
-    if (useWindowScroll) {
-      // Sayfanın global Lenis'i (SmoothScroll) pencereyi gerçek scroll ile sürer
-      // ve native 'scroll' event'i tetikler. İkinci bir Lenis oluşturmak yerine
-      // bu event'i dinleriz — böylece global smooth-scroll ile çakışma olmaz.
-      window.addEventListener('scroll', handleScroll, { passive: true });
-      window.addEventListener('resize', handleScroll);
-      return;
-    } else {
-      const scroller = scrollerRef.current;
-      if (!scroller) return;
-
-      const lenis = new Lenis({
-        wrapper: scroller,
-        content: scroller.querySelector('.scroll-stack-inner') as HTMLElement,
-        duration: 1.2,
-        easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        smoothWheel: true,
-        touchMultiplier: 2,
-        infinite: false,
-        gestureOrientation: 'vertical',
-        wheelMultiplier: 1,
-        lerp: 0.1,
-        syncTouch: true,
-        syncTouchLerp: 0.075
-      });
-
-      lenis.on('scroll', handleScroll);
-
-      const raf = (time: number) => {
-        lenis.raf(time);
-        animationFrameRef.current = requestAnimationFrame(raf);
-      };
-      animationFrameRef.current = requestAnimationFrame(raf);
-
-      lenisRef.current = lenis;
-      return lenis;
-    }
-  }, [handleScroll, useWindowScroll]);
 
   useLayoutEffect(() => {
     if (!useWindowScroll && !scrollerRef.current) return;
@@ -295,29 +271,26 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
       card.style.webkitPerspective = '1000px';
     });
 
-    setupLenis();
+    // Sayfanın global Lenis'i (SmoothScroll) pencereyi gerçek scroll ile sürer
+    // ve native 'scroll' event'i tetikler; konteyner modunda da konteynerin
+    // kendi scroll'u dinlenir. Her iki durumda da ikinci bir Lenis kurulmaz.
+    const scroller = scrollerRef.current;
+    const target: Window | HTMLElement | null = useWindowScroll ? window : scroller;
+    target?.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
 
     updateCardTransforms();
 
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+      target?.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
       if (scrollRafRef.current !== null) {
         cancelAnimationFrame(scrollRafRef.current);
         scrollRafRef.current = null;
       }
-      if (useWindowScroll) {
-        window.removeEventListener('scroll', handleScroll);
-        window.removeEventListener('resize', handleScroll);
-      }
-      if (lenisRef.current) {
-        lenisRef.current.destroy();
-      }
       stackCompletedRef.current = false;
       cardsRef.current = [];
       transformsCache.clear();
-      isUpdatingRef.current = false;
     };
   }, [
     itemDistance,
@@ -331,7 +304,7 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
     blurAmount,
     useWindowScroll,
     onStackComplete,
-    setupLenis,
+    handleScroll,
     updateCardTransforms
   ]);
 

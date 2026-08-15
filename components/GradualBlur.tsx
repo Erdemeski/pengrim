@@ -276,6 +276,14 @@ const GradualBlur: React.FC<GradualBlurProps> = (props) => {
         ? `opacity ${config.duration} ${config.easing}`
         : undefined,
       zIndex: isPageTarget ? config.zIndex + 100 : config.zIndex,
+      // Şerit kendi kompozit katmanına alınır: aksi halde 5 seri bağımlı
+      // backdrop-filter katmanının backdrop anlık görüntüsü, her scroll
+      // karesinde yeniden rasterize edilen kökten alınıyordu. Görüntü birebir
+      // aynı; yalnızca kaynak katman değişiyor.
+      // NOT: `transform` position:fixed torunları için containing block yaratır
+      // (bkz. workflow-waves.tsx'teki katman sözleşmesi). Bu kapsayıcının fixed
+      // torunu yok — children eklenirse bu varsayım tekrar kontrol edilmeli.
+      transform: "translateZ(0)",
       ...config.style,
     };
 

@@ -3,16 +3,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
-import {
-  ShowcaseLightbox,
-  type LightboxItem,
-} from "./showcase-lightbox";
+import { prewarm } from "@/lib/prewarm";
+import type { LightboxItem } from "./showcase-lightbox";
 import type { DriftWallItem } from "@/components/DriftWall";
 
 // DriftWall RAF + matchMedia + elementFromPoint kullanır → yalnızca istemcide.
 const DriftWall = dynamic(() => import("@/components/DriftWall"), {
   ssr: false,
 });
+
+// Lightbox `item === null` iken zaten `null` render ediyor; tıklanana kadar
+// hiçbir görsel yüzeyi yok → `ssr: false` çıktıyı değiştirmez. Radix Dialog +
+// focus-scope böylece ilk bundle'dan çıkar. Chunk boşta önceden ısıtılıyor ki
+// karoya tıklandığında açılış gecikmesin.
+const ShowcaseLightbox = dynamic(
+  () => import("./showcase-lightbox").then((m) => m.ShowcaseLightbox),
+  { ssr: false },
+);
 
 export type ShowcaseImage = {
   id: string;
@@ -56,6 +63,12 @@ export function ShowcaseWall({
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // Karoya tıklandığında lightbox'ın anında açılabilmesi için chunk'ı boşta
+  // önceden indir. Specifier `dynamic()` içindekiyle birebir aynı olmalı.
+  useEffect(() => {
+    prewarm("showcase-lightbox", () => import("./showcase-lightbox"));
   }, []);
 
   const tile = pickTile(viewport);

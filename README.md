@@ -58,7 +58,20 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 
 ### Görseller
 - **Vitrin (Showcase)** ReactBits **DriftWall** duvarıdır (`components/sections/showcase.tsx` → `showcase-wall.tsx` → `components/DriftWall.tsx`). Karolar 16:9 sabit oranda, duvar tam genişlikte; üst kenar gradyanla açılır, alt kenar İletişim bölümünün çizgisine dayanır. Karoya tıklamak `showcase-lightbox.tsx` üzerinden FLIP geçişli tam ekran önizleme açar. Görseller `public/showcase/` klasöründen okunur (`.jpg/.png/.webp/.avif`) ve `next/image` ile optimize edilir; klasör boşken on-brand nötr placeholder karolar (gradient SVG data-URI) gösterilir. Sayfa statik (SSG) üretildiğinden **yeni görseller `next build` sonrası** galeriye yansır.
-- **Hero** arka planı `public/hero-frames/` içindeki 130 karelik scroll-scrub dizisidir; ilk kare yüksek çözünürlüklü `public/pengrim-first-frame-edited.png`. Sayfa en üstteyken ortada statik `public/pengrim_beyaz.png` logosu gösterilir — tüm ekran boyutlarında/en-boy oranlarında.
+- **Hero** arka planı 193 karelik bir scroll-scrub dizisidir; ilk kare yüksek çözünürlüklü `public/pengrim-first-frame-edited.webp`. Sayfa en üstteyken ortada statik `public/pengrim_beyaz.png` logosu gösterilir — tüm ekran boyutlarında/en-boy oranlarında.
+
+  **İki kare seti var:**
+  - `public/hero-frames/` — 1280×720, tam set (masaüstü, tablet, yatay telefon).
+  - `public/hero-frames-portrait/` — 480×720, **merkezden kırpılmış** set. Portre telefonda `object-cover` zaten kaynağın yalnızca `720 × (genişlik/yükseklik)` piksellik merkez bandını gösteriyor (390×844 bir telefonda 1280'in 333'ü); kenarları önceden atmak ekrandaki pikseli değiştirmeden indirilen veriyi 9.5 MB'tan 5.1 MB'a düşürüyor. Küçültme **değil** kırpma olduğu için netlik aynı.
+
+  Seçim `matchMedia("(max-aspect-ratio: 2/3)")` ile yapılır (eşik kırpma genişliğiyle birebir); cihaz döndürülürse yükleyici diğer sete geçer.
+
+  Portre setini yeniden üretmek için:
+  ```bash
+  ffmpeg -start_number 1 -i public/hero-frames/frame-%04d.webp -vf "crop=480:720:400:0" -c:v libwebp -quality 92 -compression_level 6 public/hero-frames-portrait/frame-%04d.webp
+  ```
+
+  > **Dikkat:** `next.config.ts` her iki kare dizinine de `Cache-Control: immutable` veriyor. Bir kareyi **aynı yolda** yeniden kodlarsanız mevcut ziyaretçiler eskisini görmeye devam eder. Kareler değişecekse yeni bir dizin altında yayınlayın (`/hero-frames-v2/`) ve `next.config.ts` ile `hero.tsx`'teki sabitleri güncelleyin.
 
 ### İletişim
 - Form kaldırıldı. `components/sections/contact.tsx` yalnızca e-posta + telefon + konumla iletişime yönlendiren bir bloktur (değerler `messages/*.json` → `footer.email/phone/address`).
@@ -69,13 +82,15 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 
 ```
 app/[locale]/        layout + page (bölüm kompozisyonu)
-components/layout/   header (dinamik), footer, mobil nav, dil değiştirici, smooth-scroll
+components/layout/   header (dinamik), footer, mobil menü (StaggeredMenu),
+                     dil değiştirici, smooth-scroll, first-visit-gate
 components/sections/ hero, led-ribbon (signature), trust-stats, inventory,
                      how-it-works, reach, showcase (+ showcase-wall, showcase-lightbox),
                      cta-band, contact
 components/effects/  glass-card, marquee, reveal, count-up
 components/ui/        shadcn bileşenleri
 i18n/ · messages/     next-intl yapılandırması ve sözlükler
-lib/                  utils, constants, hero-intro-store, icons
+lib/                  utils, constants, icons, hero-intro-store, hero-ready-store,
+                      ball-anchor, prewarm, use-hydrated
 public/showcase/     vitrin görselleri (boşken placeholder)
 ```

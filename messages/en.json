@@ -11,7 +11,11 @@
     "contact": "Contact",
     "cta": "Get a quote",
     "menu": "Menu",
-    "language": "Language"
+    "close": "Close",
+    "language": "Language",
+    "theme": "Theme",
+    "themeToLight": "Switch to light theme",
+    "themeToDark": "Switch to dark theme"
   },
   "hero": {
     "eyebrow": "SPORT ADVERTISING",

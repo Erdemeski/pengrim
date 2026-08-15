@@ -170,6 +170,20 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /*
+    Mobil menü toggle'ının panel AÇIKKEN alacağı renk.
+
+    Neden `html` üzerinde ve neden ayrı bir değişken: toggle butonu header'ın
+    `class="dark"` sarmalayıcısının içinde (header her iki temada da koyu
+    yüzeydir). Orada `var(--foreground)` her zaman koyu-tema değerini verir,
+    yani açık temada beyaz panelin üzerinde beyaz kalır ve kaybolurdu.
+    Değişken `html` üzerinde tanımlandığı için `var(--foreground)` SAYFA
+    temasının değeriyle o noktada çözülür ve aşağıya somut bir renk olarak
+    miras kalır — aradaki `.dark` sarmalayıcısı artık etkileyemez.
+  */
+  html {
+    --sm-toggle-open: var(--foreground);
+  }
   html {
     @apply font-sans;
     /* Lenis tek smooth-scroll motoru; native scroll-behavior:smooth burada
@@ -188,11 +202,24 @@
        hidden`tan geliyor (o viewport'a propagate olur), yani `clip`i
        desteklemeyen eski tarayıcılarda da koruma sürüyor. */
     overflow-x: clip;
-    /* hafif atmosfer: floodlight ışıması */
+  }
+  /* hafif atmosfer: floodlight ışıması.
+     `background-attachment: fixed` DEĞİL: sabit eklentili arka plan kayan
+     katmanla birlikte ötelenemediği için tarayıcı her scroll karesinde
+     viewport'u yeniden boyuyordu — tüm sayfa boyunca, sabit maliyetle.
+     Aynı gradyanları viewport'a sabitlenmiş kendi kompozit katmanına alıyoruz:
+     çıktı birebir aynı (kutu zaten viewport, yüzdeler aynı yere düşüyor),
+     scroll sırasında yeniden boyama yok. z-index -1: body'nin arka plan
+     renginin üstünde, tüm içeriğin altında — bugünkü sıralamanın aynısı. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
       radial-gradient(60rem 40rem at 50% -10%, color-mix(in oklch, var(--brand-turf) 14%, transparent), transparent 70%),
       radial-gradient(50rem 30rem at 90% 8%, color-mix(in oklch, var(--brand-led) 7%, transparent), transparent 65%);
-    background-attachment: fixed;
   }
   ::selection {
     background: color-mix(in oklch, var(--brand-led) 35%, transparent);
@@ -202,6 +229,66 @@
   :focus-visible {
     outline: 2px solid color-mix(in oklch, var(--brand-led) 70%, transparent);
     outline-offset: 2px;
+  }
+
+  /*
+    ——— Scrollbar ———
+
+    Seçicisiz (`html`/`body`'ye bağlı değil) bilerek: sayfanın kendi çubuğu
+    kadar iç scroll alanları da (StaggeredMenu paneli, showcase listeleri)
+    aynı görünümü alsın.
+
+    Renkler token'lardan türetiliyor → açık/koyu tema için ayrı kurala gerek yok.
+    Kasıtlı olarak düşük kontrast: çubuk okunur ama dikkat çekmez.
+  */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: color-mix(in oklch, var(--foreground) 5%, transparent);
+  }
+  ::-webkit-scrollbar-thumb {
+    /* radius 0 + yatay padding 0: thumb'ı inceltmek için sıkça kullanılan
+       `border: Npx solid transparent` + `background-clip: content-box` hilesi
+       BİLEREK kullanılmıyor — çubuk track'in tam genişliğini kaplar. */
+    border: 0;
+    border-radius: 0;
+    background: color-mix(in oklch, var(--foreground) 16%, transparent);
+    transition: background-color 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--brand-turf) 45%, transparent);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background: color-mix(in oklch, var(--brand-turf) 65%, transparent);
+  }
+  /* ok butonları tamamen kapalı */
+  ::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /*
+    Firefox (ve `::-webkit-scrollbar` desteklemeyen diğerleri).
+
+    `@supports not selector(...)` kapısı ŞART: Chromium 121+ `scrollbar-width`
+    /`scrollbar-color` destekliyor ve bunlar `auto` dışında bir değere
+    ayarlandığında yukarıdaki tüm `::-webkit-scrollbar` kurallarını YOK SAYIYOR.
+    Kapı olmadan Chrome'da 8px'lik özel çubuk yerine tarayıcının kendi "thin"
+    çubuğu görünürdü.
+  */
+  @supports not selector(::-webkit-scrollbar) {
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in oklch, var(--foreground) 16%, transparent)
+        color-mix(in oklch, var(--foreground) 5%, transparent);
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import { useMotionValueEvent, useScroll } from "motion/react";
 import { useLenis } from "lenis/react";
 import { useTranslations } from "next-intl";
@@ -8,37 +9,55 @@ import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Container } from "./container";
 import { Logo } from "./logo";
-import { MobileNav } from "./mobile-nav";
+import { MobileMenu } from "./mobile-menu";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
 import { AnchorLink } from "./anchor-link";
 import { NAV_ITEMS, SECTION_IDS } from "@/lib/constants";
+import { useHydrated } from "@/lib/use-hydrated";
 import {
   subscribeHeroIntro,
-  getHeroIntroProgress,
+  getHeroIntroActive,
   getHeroIntroServerSnapshot,
 } from "@/lib/hero-intro-store";
 import { cn } from "@/lib/utils";
 import GooeyNav from "@/components/GooeyNav";
-import GlassSurface from "@/components/GlassSurface";
+import { prewarmEager } from "@/lib/prewarm";
+
+/**
+ * SVG `feDisplacementMap` filtresi + kendi ölçüm mantığı ilk bundle'dan çıkar.
+ * `ssr: false` güvenli: bileşen zaten `mounted` kapısının arkasında ve o ana
+ * kadar `.glass-dark` CSS fallback'i gösteriliyor — yani bir takas bugün de
+ * yapılıyor, split yalnızca ne zaman olduğunu bir tık öteliyor.
+ */
+const GlassSurface = dynamic(() => import("@/components/GlassSurface"), {
+  ssr: false,
+});
+prewarmEager("glass-surface", () => import("@/components/GlassSurface"));
 
 export function SiteHeader() {
   const t = useTranslations("nav");
   const [scrolled, setScrolled] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [activeIndex, setActiveIndex] = useState(0);
+  // Mobil menü paneli açıkken header'ın cam arka planı ve logosu gizlenir:
+  // panel header'ın ALTINDAN (z-40 < z-50) geçtiği için aksi halde koyu cam
+  // pil ve beyaz wordmark panelin üzerinde asılı kalıyor, açık temada da
+  // beyaz-üstüne-beyaz olup kayboluyordu. Gizlenince geriye yalnız "Kapat"
+  // toggle'ı kalıyor ve o da panelin zeminine göre renkleniyor.
+  const [menuOpen, setMenuOpen] = useState(false);
   const { scrollY } = useScroll();
   const lenis = useLenis();
 
-  // Hero intro evresi (merkezî metallic logo görünürken): 0 = intro başı,
-  // 1 = intro bitti. introActive iken header cam arka planı + logo + sağ küme
-  // gizlenir, yalnız navigasyon kalır.
-  const introProgress = useSyncExternalStore(
+  // Hero intro evresi (merkezî metallic logo görünürken). introActive iken
+  // header cam arka planı + logo + sağ küme gizlenir, yalnız navigasyon kalır.
+  // Store bilerek boolean yayınlıyor: float olsaydı hero'nun her scrub karesi
+  // bu ağacın tamamını yeniden render ettirirdi (bkz. hero-intro-store.ts).
+  const introActive = useSyncExternalStore(
     subscribeHeroIntro,
-    getHeroIntroProgress,
+    getHeroIntroActive,
     getHeroIntroServerSnapshot,
   );
-  const introActive = introProgress < 0.7;
 
   // logoya basınca sayfanın en üstüne yumuşak kaydır
   const scrollToTop = (e: React.MouseEvent) => {
@@ -47,7 +66,6 @@ export function SiteHeader() {
     else window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  useEffect(() => setMounted(true), []);
   useMotionValueEvent(scrollY, "change", (y) => {
     setScrolled(y > 24);
   });
@@ -115,7 +133,7 @@ export function SiteHeader() {
             aria-hidden="true"
             className={cn(
               "absolute inset-0 transition-opacity duration-500",
-              introActive ? "opacity-0" : "opacity-100",
+              introActive || menuOpen ? "opacity-0" : "opacity-100",
             )}
           >
             {mounted ? (
@@ -139,10 +157,10 @@ export function SiteHeader() {
               onClick={scrollToTop}
               className={cn(
                 "shrink-0 transition-opacity duration-500",
-                introActive && "pointer-events-none opacity-0",
+                (introActive || menuOpen) && "pointer-events-none opacity-0",
               )}
             >
-              <Logo priority />
+              <Logo />
             </Link>
 
             <div className="hidden lg:block">
@@ -156,10 +174,12 @@ export function SiteHeader() {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-1.5">
-              {/* masaüstü kontrolleri — intro'da gizli ("yalnız navigasyon") */}
+              {/* masaüstü kontrolleri — intro'da gizli ("yalnız navigasyon").
+                  `lg` altında gizli: mobilde dil ve tema seçimi StaggeredMenu
+                  panelinin içinde (tek yerde, daha okunaklı kontrollerle). */}
               <div
                 className={cn(
-                  "flex items-center gap-1 transition-opacity duration-500 sm:gap-1.5",
+                  "hidden items-center gap-1 transition-opacity duration-500 sm:gap-1.5 lg:flex",
                   introActive && "pointer-events-none opacity-0",
                 )}
               >
@@ -169,14 +189,14 @@ export function SiteHeader() {
                   href={`#${SECTION_IDS.contact}`}
                   className={cn(
                     buttonVariants(),
-                    "hidden h-9 rounded-lg px-4 text-sm font-semibold sm:inline-flex",
+                    "h-9 rounded-lg px-4 text-sm font-semibold",
                   )}
                 >
                   {t("cta")}
                 </AnchorLink>
               </div>
               {/* mobil menü — intro'da da erişilebilir kalır */}
-              <MobileNav />
+              <MobileMenu onOpenChange={setMenuOpen} />
             </div>
           </div>
         </div>

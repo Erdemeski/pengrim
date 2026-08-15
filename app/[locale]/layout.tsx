@@ -10,6 +10,7 @@ import {
 import { routing } from "@/i18n/routing";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
+import { FirstVisitGate } from "@/components/layout/first-visit-gate";
 import GradualBlur from "@/components/GradualBlur";
 import "../globals.css";
 
@@ -31,6 +32,18 @@ const mono = JetBrains_Mono({
   variable: "--font-mono",
   display: "swap",
 });
+
+/**
+ * Modül sabiti: satır içi nesne literali her render'da yeni referans üretip
+ * hem `React.memo(GradualBlur)`'ü hem de bileşenin içindeki
+ * `useMemo(..., [props])`'u etkisiz kılıyordu.
+ *
+ * z-index style ile veriliyor: bileşen target="page" iken zIndex prop'una +100
+ * ekleyip 1100'e çıkarıyor ve header (z-50) ile lightbox'ın (z-60+) üstünde
+ * kalıyordu. style, containerStyle'da zIndex'ten sonra spread edildiği için
+ * kazanır.
+ */
+const PAGE_BLUR_STYLE = { zIndex: 30 } as const;
 
 type LocaleParams = { params: Promise<{ locale: string }> };
 
@@ -69,6 +82,29 @@ export default async function LocaleLayout({
       className={`${display.variable} ${sans.variable} ${mono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/*
+          Sayfa HER yenilemede en üstten başlasın.
+
+          Bilerek bir React effect'i DEĞİL, HTML ayrıştırılırken senkron çalışan
+          bir inline script (bkz. next docs → guides/preventing-flash-before-hydration):
+            1. Tarayıcının scroll geri-yüklemesi hydration'dan önce başlıyor.
+               Effect'e bırakıldığında geri-yükleme bazen bizim scrollTo(0,0)'ımızdan
+               sonra tamamlanıp onu eziyor — özellikle belge yüksekliği geç
+               oturduğunda.
+            2. Effect'e bağlı sürüm, ağaçtaki herhangi bir istemci bileşeni hata
+               verdiğinde sessizce devre dışı kalıyordu; bu script her koşulda çalışır.
+
+          Pinlenen hero yalnızca en üstten başlarken doğru ölçüldüğü için kritik.
+          `SmoothScroll` içindeki eşdeğer effect ikinci savunma hattı olarak
+          duruyor — o ayrıca Lenis'in sanal scroll konumunu da sıfırlıyor.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if('scrollRestoration' in history)history.scrollRestoration='manual';window.scrollTo(0,0)}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
@@ -80,12 +116,8 @@ export default async function LocaleLayout({
             <SmoothScroll>
               {children}
               {/* Pencere alt kenarında kalıcı yumuşak geçiş.
-                  z-index style ile veriliyor: bileşen target="page" iken
-                  zIndex prop'una +100 ekleyip 1100'e çıkarıyor ve header
-                  (z-50), Sheet ile lightbox'ın (z-60+) üstünde kalıyordu.
-                  style, containerStyle'da zIndex'ten sonra spread edildiği
-                  için kazanır. pointer-events: none olduğundan altındaki
-                  form alanları ve bağlantılar tıklanabilir kalır. */}
+                  pointer-events: none olduğundan altındaki form alanları ve
+                  bağlantılar tıklanabilir kalır. */}
               <GradualBlur
                 target="page"
                 position="bottom"
@@ -95,8 +127,12 @@ export default async function LocaleLayout({
                 curve="bezier"
                 exponential
                 opacity={1}
-                style={{ zIndex: 30 }}
+                style={PAGE_BLUR_STYLE}
               />
+              {/* İlk ziyaret kapısı — hero kareleri 400 ms'de hazırsa hiç
+                  render edilmez. Lenis'e erişebilmesi için SmoothScroll'un
+                  içinde. */}
+              <FirstVisitGate />
             </SmoothScroll>
           </NextIntlClientProvider>
         </ThemeProvider>

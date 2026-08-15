@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
@@ -11,13 +12,25 @@ import { Container } from "@/components/layout/container";
 import { AnchorLink } from "@/components/layout/anchor-link";
 import { LedRibbon } from "./led-ribbon";
 import TiltedCard from "@/components/TiltedCard";
-import SideRays from "@/components/SideRays";
 import { buttonVariants } from "@/components/ui/button";
 import { SECTION_IDS } from "@/lib/constants";
 import { setHeroIntroProgress } from "@/lib/hero-intro-store";
+import { setHeroReady } from "@/lib/hero-ready-store";
+import { prewarmEager } from "@/lib/prewarm";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
+
+/**
+ * OGL'yi ilk bundle'dan çıkarır. `ssr: false` güvenli: SideRays yalnızca bir
+ * WebGL canvas'ı, sunucu çıktısında görsel karşılığı yok.
+ *
+ * Modül kapsamında hemen ısıtılıyor (idle değil): katman zaten 0.15 sn gecikmeli
+ * 1.1 sn'lik bir fade'in arkasında, yani chunk'ın yerine yetişmesi için ~1.25 sn
+ * var; ana chunk ile paralel indiği için bu pencereye rahat sığar.
+ */
+const SideRays = dynamic(() => import("@/components/SideRays"), { ssr: false });
+prewarmEager("side-rays", () => import("@/components/SideRays"));
 
 // public/hero-frames içindeki kare dizisi. Kaynak 24fps çekimden ffmpeg
 // minterpolate ile 36fps'e (130 → 193 kare) hareket-telafili interpole edilip
@@ -25,6 +38,12 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 // az yer (9.5 MB). Düşük kaynak kare hızının ürettiği keskin atlamaları bu
 // yoğunluk + aşağıdaki cross-fade birlikte kapatır.
 const HERO_FRAME_DIR = "/hero-frames";
+// Portre telefonlar için merkezden kırpılmış set (480×720). Küçültme DEĞİL
+// kırpma: bkz. srcFor yakınındaki not.
+//   ffmpeg -start_number 1 -i public/hero-frames/frame-%04d.webp \
+//     -vf "crop=480:720:400:0" -c:v libwebp -quality 92 -compression_level 6 \
+//     public/hero-frames-portrait/frame-%04d.webp
+const HERO_FRAME_DIR_PORTRAIT = "/hero-frames-portrait";
 const HERO_FRAME_COUNT = 193;
 // İlk kare: sıkıştırılmış frame-0001 yerine yüksek çözünürlüklü düzenlenmiş görsel.
 const HERO_FIRST_FRAME = "/pengrim-first-frame-edited.webp";
@@ -34,6 +53,9 @@ const HERO_SCROLL_VH = 1.6;
 // Not: bu bir *oran*, mutlak mesafe değil — HERO_SCROLL_VH değişirse intronun
 // hissedilen süresini korumak için birlikte ayarlanmalı (0.28 × 1.6vh ≈ 0.45vh).
 const INTRO_END = 0.28;
+// Kaç kare geldiğinde hero "scrub'a hazır" sayılır (poster dahil). Aşağı
+// kaydırmanın ilk saniyesini takılmadan karşılamaya yeten pencere.
+const READY_AFTER_FRAMES = 12;
 
 /** Bir metni kelime <span>'lerine böler (ScrollReveal kelime-kelime efekti için). */
 function splitWords(text: string, keyPrefix: string) {
@@ -53,9 +75,12 @@ export function Hero() {
   const reduce = useReducedMotion();
 
   // SideRays yalnız intro evresinde anlamlı. Opaklığı 0'a indirmek WebGL
-  // döngüsünü durdurmaz, bu yüzden intro bitince bileşeni tamamen söküyoruz
-  // (scroll geri sarılırsa yeniden bağlanır).
-  const [raysMounted, setRaysMounted] = useState(true);
+  // döngüsünü durdurmaz — ama bileşeni SÖKMEK de doğru cevap değildi: her eşik
+  // geçişinde yeni bir GL context kuruluyordu ve daha kötüsü, aşağıdaki GSAP
+  // tween'i sökülen düğüme bağlı kalıp scroll-fade'i sessizce devre dışı
+  // bırakıyordu. Artık bileşen hero boyunca mount kalıyor, yalnız render
+  // döngüsü duraklatılıyor.
+  const [raysPaused, setRaysPaused] = useState(false);
 
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -101,17 +126,37 @@ export function Hero() {
 
       // kareleri oluştur (henüz yüklemeye başlamadan) — `.src` atanana kadar
       // tarayıcı isteği başlatmaz.
-      const images: HTMLImageElement[] = [];
+      let images: HTMLImageElement[] = [];
       for (let i = 0; i < HERO_FRAME_COUNT; i++) {
         images.push(new Image());
       }
+      // Set değişiminde (cihaz döndürme) eski kareler yeni set gelene kadar
+      // çizilmeye devam etsin diye elde tutulur — aksi halde döndürme anında
+      // canvas boşalıp altındaki poster görünürdü.
+      let fallbackImages: HTMLImageElement[] | null = null;
       const lastIndex = HERO_FRAME_COUNT - 1;
 
-      // kare kaynağı: 0. kare yüksek çözünürlüklü poster, kalanlar WebP dizisi.
+      // Portre telefonda ekranda kaynağın yalnızca `720 × (w/h)` piksellik
+      // merkez bandı görünüyor (object-cover); 390×844 bir telefonda bu 1280'in
+      // 333'ü. Bu yüzden mobil set KÜÇÜLTÜLMÜŞ değil, aynı dikey çözünürlükte
+      // MERKEZDEN KIRPILMIŞ (480×720): çizilen pikseller birebir aynı kaynak
+      // bölgesinden aynı ölçekle geliyor, netlik değişmiyor, byte %46 düşüyor.
+      // Eşik (2/3 = 0.667) kırpma genişliğiyle birebir aynı: bu orandan dar her
+      // ekranda 480 px görünen bandı tamamen kapsar.
+      const portraitMq =
+        typeof window.matchMedia === "function"
+          ? window.matchMedia("(max-aspect-ratio: 2/3)")
+          : null;
+      let usePortrait = Boolean(portraitMq?.matches);
+
+      // kare kaynağı: 0. kare yüksek çözünürlüklü poster (tek dosya, 49 KB —
+      // kırpmaya değmez), kalanlar aktif WebP dizisi.
       const srcFor = (index: number) =>
         index === 0
           ? HERO_FIRST_FRAME
-          : `${HERO_FRAME_DIR}/frame-${String(index + 1).padStart(4, "0")}.webp`;
+          : `${usePortrait ? HERO_FRAME_DIR_PORTRAIT : HERO_FRAME_DIR}/frame-${String(
+              index + 1,
+            ).padStart(4, "0")}.webp`;
 
       // Dar bant / küçük ekranda her ikinci kareyi yükle. Cross-fade aradaki
       // boşluğu zaten örttüğü için görsel kayıp minimal, indirilen byte yarıya iner.
@@ -150,17 +195,26 @@ export function Hero() {
         ctx.drawImage(img, dx, dy, dw, dh);
       };
 
-      const isReady = (i: number) =>
-        Boolean(images[i]?.complete && images[i]?.naturalWidth);
+      /** Aktif sette hazır değilse (set değişimi sırasında) eski setten döner. */
+      const readyImg = (i: number) => {
+        const img = images[i];
+        if (img?.complete && img.naturalWidth) return img;
+        const fb = fallbackImages?.[i];
+        if (fb?.complete && fb.naturalWidth) return fb;
+        return null;
+      };
 
       /** İstenen indeks henüz yüklenmediyse en yakın yüklenmiş kareye düşer. */
       const pickLoaded = (i: number) => {
-        if (isReady(i)) return i;
+        const direct = readyImg(i);
+        if (direct) return { img: direct, index: i };
         for (let d = 1; d < HERO_FRAME_COUNT; d++) {
-          if (isReady(i - d)) return i - d;
-          if (isReady(i + d)) return i + d;
+          const lo = readyImg(i - d);
+          if (lo) return { img: lo, index: i - d };
+          const hi = readyImg(i + d);
+          if (hi) return { img: hi, index: i + d };
         }
-        return -1;
+        return null;
       };
 
       // İki komşu kareyi alpha ile harmanlar (sub-frame dissolve). Kaynak kare
@@ -179,18 +233,18 @@ export function Hero() {
         request(a);
         request(b);
 
-        const ia = pickLoaded(a);
-        if (ia === -1) return;
+        const ra = pickLoaded(a);
+        if (!ra) return;
 
         currentFrame = clamped;
         ctx.globalAlpha = 1;
-        paint(images[ia]);
+        paint(ra.img);
 
         if (t > 0.01 && b !== a) {
-          const ib = pickLoaded(b);
-          if (ib !== -1 && ib !== ia) {
+          const rb = pickLoaded(b);
+          if (rb && rb.index !== ra.index) {
             ctx.globalAlpha = t;
-            paint(images[ib]);
+            paint(rb.img);
             ctx.globalAlpha = 1;
           }
         }
@@ -217,15 +271,24 @@ export function Hero() {
 
       let cancelled = false;
       let inflight = 0;
-      const started = new Set<number>();
+      let started = new Set<number>();
+      // "Scrub'a hazır" ölçütü: poster + ilk pencere kadar kare geldi.
+      // FirstVisitGate bunu bekliyor.
+      let completed = 0;
+      // Set değişiminde eski isteklerin `done`'ları sayaçları bozmasın diye.
+      let generation = 0;
 
       const request = (index: number) => {
         if (cancelled || started.has(index) || !images[index]) return;
         started.add(index);
         inflight++;
         const img = images[index];
+        const gen = generation;
         const done = () => {
+          if (gen !== generation) return; // eski setten gelen kare — yok say
           inflight--;
+          completed++;
+          if (completed >= READY_AFTER_FRAMES) setHeroReady();
           if (!cancelled) {
             // yeni gelen kare o an ekranda olması gerekene denk geliyorsa yeniden çiz
             draw(currentFrame);
@@ -263,8 +326,36 @@ export function Hero() {
         pump();
       };
 
+      /**
+       * Cihaz döndürüldüğünde en-boy oranı 2/3 eşiğini geçerse aktif kare seti
+       * değişir. Kırpılmış set yatay bir viewport'ta object-cover ile aşırı
+       * yakınlaşmış görüneceği (ve tersi de doğru olduğu) için yükleyici
+       * tamamen yeniden başlatılır. Eski diziyi `fallbackImages` olarak
+       * tutuyoruz: yeni set gelene kadar çizim eskisinden sürer, canvas
+       * boşalmaz. `paint()` her en-boy oranını cover ile çizdiği için bu ara
+       * karelerde de görüntü doğru, yalnız kırpma farklı.
+       */
+      const switchFrameSet = () => {
+        const next = Boolean(portraitMq?.matches);
+        if (cancelled || next === usePortrait) return;
+        usePortrait = next;
+
+        generation++;
+        fallbackImages = images;
+        images = [];
+        for (let i = 0; i < HERO_FRAME_COUNT; i++) images.push(new Image());
+        started = new Set<number>();
+        inflight = 0;
+        orderPos = 0;
+
+        request(0);
+        startLoading();
+        draw(currentFrame);
+      };
+
       resize();
       window.addEventListener("resize", resize);
+      portraitMq?.addEventListener("change", switchFrameSet);
 
       // ilk kare her koşulda gelir (poster + canvas'ın ilk boyaması)
       request(0);
@@ -275,12 +366,16 @@ export function Hero() {
       // çizilmeyeceği için indirilmez de.
       if (reduce) {
         setHeroIntroProgress(1);
+        // Kare dizisinin geri kalanı hiç yüklenmeyecek → hazırlık ölçütü asla
+        // dolmaz; kapıyı burada elle serbest bırak.
+        setHeroReady();
         // scroll-jack yok ama kurulum "başarılı" sayılır → failsafe susar
         // (kelimeler zaten reduced-motion CSS kuralıyla görünür).
         gsapReadyRef.current = true;
         return () => {
           cancelled = true;
           window.removeEventListener("resize", resize);
+          portraitMq?.removeEventListener("change", switchFrameSet);
         };
       }
 
@@ -297,7 +392,6 @@ export function Hero() {
       gsap.set(words, { opacity: 0, filter: "blur(10px)", y: 14 });
       gsap.set(ctaRef.current, { opacity: 0, y: 20, pointerEvents: "none" });
 
-      let raysVisible = true;
       const proxy = { frame: 0 };
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -312,12 +406,6 @@ export function Hero() {
           // header ile logo fade'i tek kaynaktan senkron.
           onUpdate: (self) => {
             setHeroIntroProgress(Math.min(1, self.progress / INTRO_END));
-            // eşik geçişinde tek setState (her karede değil): histerezisli
-            const shouldShow = self.progress < INTRO_END;
-            if (shouldShow !== raysVisible) {
-              raysVisible = shouldShow;
-              setRaysMounted(shouldShow);
-            }
           },
         },
       });
@@ -353,13 +441,45 @@ export function Hero() {
 
       // SideRays ışın katmanı logoyla birebir aynı sönümle kaybolur (video
       // kare arka planı ile logo arasındaki katman, yalnız intro'da görünür).
-      if (sideRaysRef.current) {
-        tl.to(
-          sideRaysRef.current,
-          { opacity: 0, ease: "none", duration: INTRO_END },
-          0,
-        );
-      }
+      //
+      // Opaklık DOM düğümüne DOĞRUDAN tween'lenmiyor; bir proxy üzerinden
+      // sürülüyor ve `sideRaysRef.current` her karede taze okunuyor. İki ayrı
+      // hatayı birden kapatan tasarım kararı:
+      //   1. Düğümü doğrudan hedeflemek, katman bir kez sökülüp yeniden
+      //      takıldığında tween'i kopuk düğüme bağlı bırakıyordu → scroll-fade
+      //      sessizce çalışmayı bırakıyor, katman tam opaklıkta kalıyor ve
+      //      shader'ın ışık çekirdeği (brightness ≫ 1) bir kare boyunca ekranı
+      //      beyaza boyuyordu.
+      //   2. Duraklatma eşiği ScrollTrigger'ın HAM `progress` değerinden
+      //      alınıyordu; oysa ekranda çizili opaklık `scrub: 0.35` yüzünden
+      //      geriden geliyor. Fade tamamlanmadan katman kesiliyordu (keskin
+      //      kaybolma). Artık eşik de aynı proxy'den, yani gerçekten çizilen
+      //      değerden geliyor.
+      const rays = { o: 1 };
+      let raysPausedNow = false;
+      tl.to(
+        rays,
+        {
+          o: 0,
+          ease: "none",
+          duration: INTRO_END,
+          onUpdate: () => {
+            const el = sideRaysRef.current;
+            if (el) {
+              el.style.opacity = String(rays.o);
+              // tam 0'da compositor'dan da düşür (görsel olarak fark yok)
+              el.style.visibility = rays.o <= 0.001 ? "hidden" : "visible";
+            }
+            // eşik geçişinde tek setState (her karede değil): histerezisli
+            const next = rays.o <= 0.01;
+            if (next !== raysPausedNow) {
+              raysPausedNow = next;
+              setRaysPaused(next);
+            }
+          },
+        },
+        0,
+      );
 
       // TiltedCard mouse etkileşimi görünmez haldeyken altındaki
       // başlık/CTA'ya tıklamayı engellemesin diye intro bitince kapatılır
@@ -411,10 +531,22 @@ export function Hero() {
       // kuralı !important ile ezilir; metin scroll'dan bağımsız görünür kalır.)
       gsapReadyRef.current = true;
 
+      // Archivo geç yüklenirse başlık metrikleri, dolayısıyla ölçülen pin
+      // mesafesi intro'nun ortasında sessizce geçersizleşiyordu. ScrollExpandCard
+      // ve BallJourney'de zaten olan bu satır hero'da eksikti.
+      document.fonts?.ready
+        .then(() => {
+          if (!cancelled) ScrollTrigger.refresh();
+        })
+        .catch(() => {
+          // no-op — font yüklemesi başarısızsa mevcut metrikler geçerli kalır
+        });
+
       return () => {
         cancelled = true;
         window.removeEventListener("resize", resize);
         window.removeEventListener("load", startLoading);
+        portraitMq?.removeEventListener("change", switchFrameSet);
       };
     },
     { scope: sectionRef, dependencies: [reduce] },
@@ -440,10 +572,13 @@ export function Hero() {
         className="absolute inset-0 h-full w-full will-change-transform transform-gpu"
       />
 
-      {/* okunabilirlik için karartma katmanı + alt bölüme yumuşak geçiş */}
+      {/* alt bölüme yumuşak geçiş — YALNIZ alt taraftan. Üst karartma bilerek
+          yok: başlık kontrastı zaten aşağıdaki sola dayalı scrim'den geliyor,
+          üstteki katman kareyi gereksiz yere bastırıyordu. Ramp %65 yüksekliğe
+          yayılıp orta durağı düşürüldüğü için geçiş yumuşak ve az belirgin. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-linear-to-b from-black/55 via-black/20 to-background"
+        className="absolute inset-x-0 bottom-0 h-[65%] bg-linear-to-b from-transparent via-background/30 via-65% to-background"
       />
 
       {/* metin bloğunun arkasına sola dayalı yerel scrim — başlık kontrastı
@@ -455,10 +590,12 @@ export function Hero() {
 
       {/* SideRays — video kare arka planı ile merkezî logo arasında, yalnız
           intro'da (logo görünürken) görünür. Dış katman mount'ta bir kerelik
-          "belirme" fade'i (framer-motion, GSAP'tan bağımsız); iç katman ise
-          logoyla birebir aynı sönümle (GSAP, yukarıdaki scrub timeline) kaybolur.
-          Intro bitince bileşen tamamen sökülür → WebGL döngüsü durur. */}
-      {!reduce && raysMounted && (
+          "belirme" fade'i (motion/react, GSAP'tan bağımsız — bileşen artık
+          sökülmediği için yalnızca sayfa ilk açılırken bir kez çalışır); iç
+          katman ise logoyla birebir aynı sönümle (GSAP, yukarıdaki scrub
+          timeline) kaybolur. Intro bitince render döngüsü `paused` ile durur,
+          GL context ayakta kalır. */}
+      {!reduce && (
         <motion.div
           aria-hidden="true"
           className="absolute inset-0"
@@ -471,13 +608,14 @@ export function Hero() {
               speed={2.5}
               rayColor1="#f0c96a"
               rayColor2="#f4f7f5"
-              intensity={1}
+              intensity={1.45}
               spread={2}
               origin="top-right"
               saturation={1}
               blend={0.75}
               falloff={1}
-              opacity={0.5}
+              opacity={0.72}
+              paused={raysPaused}
             />
           </div>
         </motion.div>
