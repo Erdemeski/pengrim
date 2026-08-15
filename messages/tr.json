@@ -32,12 +32,12 @@
   },
   "trust": {
     "stats": {
-      "reach": "sezonluk yayın erişimi",
-      "matches": "kapsanan maç",
-      "leagues": "lig & turnuva",
-      "brands": "marka kampanyası"
+      "reach": "YILLIK DENEYİM",
+      "matches": "MAÇ ORGANİZASYONU",
+      "teams": "SPOR KULÜBÜ VE STADYUMU",
+      "brands": "MARKA KAMPANYASI"
     },
-    "note": "Örnek değerler. Gerçek kampanya verileriyle güncellenecektir."
+    "note": ""
   },
   "inventory": {
     "title": "Sahanın her karesi bir reklam alanı",

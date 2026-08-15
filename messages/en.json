@@ -32,12 +32,12 @@
   },
   "trust": {
     "stats": {
-      "reach": "seasonal broadcast reach",
-      "matches": "matches covered",
-      "leagues": "leagues & tournaments",
-      "brands": "brand campaigns"
+      "reach": "YEARS OF EXPERIENCE",
+      "matches": "MATCH ORGANIZATION",
+      "teams": "SPORTING CLUBS AND STADIUMS",
+      "brands": "BRAND CAMPAIGNS"
     },
-    "note": "Sample figures. To be updated with real campaign data."
+    "note": ""
   },
   "inventory": {
     "title": "Every frame of the pitch is ad space",

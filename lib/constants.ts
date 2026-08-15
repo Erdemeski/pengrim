@@ -25,10 +25,10 @@ export const STATS: ReadonlyArray<{
   suffix: string;
   decimals?: number;
 }> = [
-  { key: "reach", value: 850, suffix: "M+" },
-  { key: "matches", value: 1200, suffix: "+" },
-  { key: "leagues", value: 38, suffix: "+" },
-  { key: "brands", value: 140, suffix: "+" },
+  { key: "reach", value: 30, suffix: "+" },
+  { key: "matches", value: 500, suffix: "+" },
+  { key: "teams", value: 25, suffix: "+" },
+  { key: "brands", value: 450, suffix: "+" },
 ];
 
 export const INVENTORY: ReadonlyArray<{ key: string; icon: IconName }> = [
