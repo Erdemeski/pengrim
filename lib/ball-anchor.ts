@@ -23,6 +23,16 @@ export const BALL_D = 0.08; // çap / görsel genişliği
 /** only_ball.webp: topun çapı / dosya genişliği (alfa sınırlayıcı kutudan ölçüldü). */
 export const BALL_PNG_FILL = 0.80078;
 
+/** Top görsel kutusunun sabit CSS boyutu; gerçek çap `scale()` ile verilir. */
+export const BALL_BOX = 320;
+
+/**
+ * Tutunma fazında topun yumuşak belirme penceresi — kartın açılma ilerlemesi
+ * (p) üzerinden. ScrollExpandCard (fotoğrafın içindeki top) kullanır.
+ */
+export const BALL_FADE_IN0 = 0.72;
+export const BALL_FADE_IN1 = 0.94;
+
 export type BallAnchorGeom = {
   /** ScrollExpandCard ölçüm yapabildi mi (reduced-motion / kısa span'de false). */
   enabled: boolean;
@@ -174,6 +184,30 @@ export function solveObjectPosition(
   return {
     px: axisPosition(vw, dw, BALL_U, r, Math.max(24, vw * 0.07)),
     py: axisPosition(vh, dh, BALL_V, r, Math.max(24, vh * 0.07)),
+  };
+}
+
+/**
+ * Topun frame-yerel konumu (sarmalayıcı dönüşümü ÖNCESİ, vw × vh kutusunda
+ * object-cover eşlemesiyle). ScrollExpandCard bunu fotoğraf sarmalayıcısının
+ * İÇİNE çizer: böylece görselle aynı transform'u alır ve doğal scroll ile
+ * piksel piksel kilitli kalır (JS gecikmesi top–fotoğraf kaymasına yol açmaz).
+ */
+export function ballFrameLayout(
+  vw: number,
+  vh: number,
+  nw: number,
+  nh: number,
+  posX: number,
+  posY: number
+): { x: number; y: number; d: number } {
+  const sc = Math.max(vw / (nw || 1), vh / (nh || 1));
+  const dw = nw * sc;
+  const dh = nh * sc;
+  return {
+    x: (vw - dw) * posX + BALL_U * dw,
+    y: (vh - dh) * posY + BALL_V * dh,
+    d: BALL_D * dw,
   };
 }
 

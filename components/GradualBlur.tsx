@@ -11,6 +11,7 @@ import React, {
   useMemo,
   type PropsWithChildren,
 } from "react";
+import { useIsCoarsePointer, usePerfTier } from "@/lib/perf-tier";
 
 type GradualBlurProps = PropsWithChildren<{
   position?: "top" | "bottom" | "left" | "right";
@@ -209,6 +210,15 @@ const GradualBlur: React.FC<GradualBlurProps> = (props) => {
     "width",
   ) as string | undefined;
 
+  // Yerel ek — sayfa altına sabit şerit 5 seri `backdrop-filter` katmanı
+  // taşıyor ve altındaki içerik her scroll karesinde değiştiği için hepsi her
+  // karede yeniden hesaplanıyor. Mobil GPU'larda bu tek başına kare
+  // düşürüyordu. Dokunmatik/zayıf cihazda aynı geçiş tek bir renk
+  // gradyanıyla (backdrop yok, sıfır maliyet) veriliyor.
+  const perfTier = usePerfTier();
+  const coarse = useIsCoarsePointer();
+  const lite = config.target === "page" && (coarse || perfTier === "low");
+
   const isVisible = useIntersectionObserver(
     containerRef,
     config.animated === "scroll",
@@ -323,7 +333,19 @@ const GradualBlur: React.FC<GradualBlurProps> = (props) => {
       onMouseEnter={hoverIntensity ? () => setIsHovered(true) : undefined}
       onMouseLeave={hoverIntensity ? () => setIsHovered(false) : undefined}
     >
-      <div className="relative h-full w-full">{blurDivs}</div>
+      <div className="relative h-full w-full">
+        {lite ? (
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(${getGradientDirection(config.position)}, transparent, color-mix(in oklch, var(--background) 70%, transparent))`,
+              opacity: config.opacity,
+            }}
+          />
+        ) : (
+          blurDivs
+        )}
+      </div>
       {props.children && <div className="relative">{props.children}</div>}
     </div>
   );

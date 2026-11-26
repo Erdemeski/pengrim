@@ -15,8 +15,15 @@ import TiltedCard from "@/components/TiltedCard";
 import { buttonVariants } from "@/components/ui/button";
 import { SECTION_IDS } from "@/lib/constants";
 import { setHeroIntroProgress } from "@/lib/hero-intro-store";
-import { setHeroReady } from "@/lib/hero-ready-store";
+import {
+  completeTask,
+  setTaskProgress,
+  usePreloadPhase,
+} from "@/lib/preload-store";
+import { getStableViewport } from "@/lib/viewport";
+import { HeroAutoScroll } from "./hero-autoscroll";
 import { prewarmEager } from "@/lib/prewarm";
+import { getPerfTier, usePerfTier } from "@/lib/perf-tier";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -45,6 +52,9 @@ const HERO_FRAME_DIR = "/hero-frames";
 //     public/hero-frames-portrait/frame-%04d.webp
 const HERO_FRAME_DIR_PORTRAIT = "/hero-frames-portrait";
 const HERO_FRAME_COUNT = 193;
+// Kare setlerinin doğal boyutları — canvas çözünürlüğü buna göre sınırlanır.
+const HERO_FRAME_SIZE = { w: 1280, h: 720 };
+const HERO_FRAME_SIZE_PORTRAIT = { w: 480, h: 720 };
 // İlk kare: sıkıştırılmış frame-0001 yerine yüksek çözünürlüklü düzenlenmiş görsel.
 const HERO_FIRST_FRAME = "/pengrim-first-frame-edited.webp";
 // Pinli scroll mesafesi (viewport yüksekliği katı olarak).
@@ -53,9 +63,6 @@ const HERO_SCROLL_VH = 1.6;
 // Not: bu bir *oran*, mutlak mesafe değil — HERO_SCROLL_VH değişirse intronun
 // hissedilen süresini korumak için birlikte ayarlanmalı (0.28 × 1.6vh ≈ 0.45vh).
 const INTRO_END = 0.28;
-// Kaç kare geldiğinde hero "scrub'a hazır" sayılır (poster dahil). Aşağı
-// kaydırmanın ilk saniyesini takılmadan karşılamaya yeten pencere.
-const READY_AFTER_FRAMES = 12;
 
 /** Bir metni kelime <span>'lerine böler (ScrollReveal kelime-kelime efekti için). */
 function splitWords(text: string, keyPrefix: string) {
@@ -73,6 +80,26 @@ function splitWords(text: string, keyPrefix: string) {
 export function Hero() {
   const t = useTranslations("hero");
   const reduce = useReducedMotion();
+  // Zayıf cihazda SideRays (ikinci WebGL bağlamı) yerine statik bir ışık
+  // gradyanı çizilir; GSAP sönümü aynı ref üzerinden ikisinde de çalışır.
+  const perfTier = usePerfTier();
+  // Açılış ekranı sönmeye başladığı an hero'nun giriş animasyonları başlar
+  // (ışık huzmeleri + LED şeridi). Eskiden mount'ta başlıyor, ekran açıldıktan
+  // birkaç yüz ms sonra "geç yüklenmiş" gibi beliriyorlardı.
+  const revealed = usePreloadPhase() !== "loading";
+  const ribbonRef = useRef<HTMLDivElement>(null);
+
+  // Işık huzmeleri görevi: zayıf cihazda / hareket azaltmada WebGL yok →
+  // hemen tamam. Normalde SideRays ilk karesini çizince tamamlanır; WebGL
+  // hiç açılamazsa açılış ekranı 4 sn'den fazla beklemesin.
+  useEffect(() => {
+    if (reduce || perfTier === "low") {
+      completeTask("side-rays");
+      return;
+    }
+    const id = window.setTimeout(() => completeTask("side-rays"), 4000);
+    return () => window.clearTimeout(id);
+  }, [reduce, perfTier]);
 
   // SideRays yalnız intro evresinde anlamlı. Opaklığı 0'a indirmek WebGL
   // döngüsünü durdurmaz — ama bileşeni SÖKMEK de doğru cevap değildi: her eşik
@@ -119,11 +146,15 @@ export function Hero() {
       const canvas = canvasRef.current;
       const section = sectionRef.current;
       if (!canvas || !section) return;
-      // alpha:false → her frame'de opak kare çizildiği için alfa karıştırma atlanır;
-      // desynchronized:true → destekleyen tarayıcılarda scroll-tetiklemeli redraw
-      // gecikmesini azaltır (compositor round-trip bypass ipucu).
-      const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+      // alpha:false → her frame'de opak kare çizildiği için alfa karıştırma atlanır.
+      //
+      // `desynchronized: true` BİLEREK YOK. Bu ipucu canvas'ı low-latency /
+      // front-buffer moduna alıyor; Android'de (özellikle Samsung Internet)
+      // scroll sırasında tearing ve bozuk tile olarak görünen glitch'in
+      // kaynağıydı. Kazandırdığı birkaç ms bu riske değmez.
+      const ctx = canvas.getContext("2d", { alpha: false });
       if (!ctx) return;
+      const tier = getPerfTier();
 
       // kareleri oluştur (henüz yüklemeye başlamadan) — `.src` atanana kadar
       // tarayıcı isteği başlatmaz.
@@ -174,6 +205,8 @@ export function Hero() {
       const step = saveData || isSmall ? 2 : 1;
 
       let currentFrame = 0;
+      // Son çizilen bileşim — aynı kare/alpha tekrar istenirse yeniden boyama yok.
+      let lastDrawKey = "";
 
       /** Tek bir kareyi object-cover mantığıyla canvas'a boyar. */
       const paint = (img: HTMLImageElement) => {
@@ -238,28 +271,51 @@ export function Hero() {
         if (!ra) return;
 
         currentFrame = clamped;
+        const rb = t > 0.01 && b !== a ? pickLoaded(b) : null;
+        const blend = rb && rb.index !== ra.index ? rb : null;
+        // alpha 1/64 adıma yuvarlanır: gözle ayırt edilmez, ama scrub'ın çok
+        // küçük adımlarında gereksiz yeniden boyamayı keser.
+        const alphaStep = Math.round(t * 64);
+        const key = blend
+          ? `${ra.img.src}|${blend.img.src}|${alphaStep}`
+          : ra.img.src;
+        if (key === lastDrawKey) return;
+        lastDrawKey = key;
+
         ctx.globalAlpha = 1;
         paint(ra.img);
-
-        if (t > 0.01 && b !== a) {
-          const rb = pickLoaded(b);
-          if (rb && rb.index !== ra.index) {
-            ctx.globalAlpha = t;
-            paint(rb.img);
-            ctx.globalAlpha = 1;
-          }
+        if (blend) {
+          ctx.globalAlpha = alphaStep / 64;
+          paint(blend.img);
+          ctx.globalAlpha = 1;
         }
       };
 
+      /**
+       * Canvas çözünürlüğü KAYNAK karenin ekrana çizildiği ölçekle sınırlı.
+       *
+       * Eskiden backing DPR×CSS boyutundaydı (portre telefonda ~1080×2340);
+       * oysa kaynak kare 480×720. Her scroll karesinde iki tam ekran
+       * `drawImage` "high" kalitede YUKARI örnekleniyordu — zayıf GPU'da kare
+       * düşmesinin ana kaynaklarından biri. Artık backing, kaynağın ekrandaki
+       * piksel yoğunluğunu aşmıyor; kalan büyütmeyi compositor (GPU) yapıyor.
+       * Netlik aynı: kaynakta zaten bundan fazla detay yok.
+       */
       const resize = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = Math.round(canvas.clientWidth * dpr);
-        canvas.height = Math.round(canvas.clientHeight * dpr);
+        const cssW = Math.max(1, canvas.clientWidth);
+        const cssH = Math.max(1, canvas.clientHeight);
+        const src = usePortrait ? HERO_FRAME_SIZE_PORTRAIT : HERO_FRAME_SIZE;
+        const coverScale = Math.max(cssW / src.w, cssH / src.h);
+        const density = Math.max(0.5, Math.min(dpr, 1 / coverScale));
+        canvas.width = Math.round(cssW * density);
+        canvas.height = Math.round(cssH * density);
         // canvas.width atamak 2D context state'ini sıfırlar (globalAlpha,
         // imageSmoothing*) → yeniden kurulmalı.
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
+        ctx.imageSmoothingQuality = "medium";
         ctx.globalAlpha = 1;
+        lastDrawKey = "";
         draw(currentFrame);
       };
 
@@ -273,8 +329,8 @@ export function Hero() {
       let cancelled = false;
       let inflight = 0;
       let started = new Set<number>();
-      // "Scrub'a hazır" ölçütü: poster + ilk pencere kadar kare geldi.
-      // FirstVisitGate bunu bekliyor.
+      // Açılış ekranı (SiteLoader) kare dizisinin TAMAMINI bekliyor: otomatik
+      // hero scroll'u ilk karede başlıyor ve hiç takılmamalı.
       let completed = 0;
       // Set değişiminde eski isteklerin `done`'ları sayaçları bozmasın diye.
       let generation = 0;
@@ -289,7 +345,7 @@ export function Hero() {
           if (gen !== generation) return; // eski setten gelen kare — yok say
           inflight--;
           completed++;
-          if (completed >= READY_AFTER_FRAMES) setHeroReady();
+          setTaskProgress("hero-frames", completed / order.length);
           if (!cancelled) {
             // yeni gelen kare o an ekranda olması gerekene denk geliyorsa yeniden çiz
             draw(currentFrame);
@@ -351,7 +407,8 @@ export function Hero() {
 
         request(0);
         startLoading();
-        draw(currentFrame);
+        // backing çözünürlüğü aktif setin doğal boyutuna bağlı
+        resize();
       };
 
       resize();
@@ -367,9 +424,9 @@ export function Hero() {
       // çizilmeyeceği için indirilmez de.
       if (reduce) {
         setHeroIntroProgress(1);
-        // Kare dizisinin geri kalanı hiç yüklenmeyecek → hazırlık ölçütü asla
-        // dolmaz; kapıyı burada elle serbest bırak.
-        setHeroReady();
+        // Kare dizisinin geri kalanı hiç yüklenmeyecek → açılış ekranı
+        // beklemesin.
+        completeTask("hero-frames");
         // scroll-jack yok ama kurulum "başarılı" sayılır → failsafe susar
         // (kelimeler zaten reduced-motion CSS kuralıyla görünür).
         gsapReadyRef.current = true;
@@ -380,9 +437,9 @@ export function Hero() {
         };
       }
 
-      // kalan kareler kritik yükten sonra akmaya başlasın
-      if (document.readyState === "complete") startLoading();
-      else window.addEventListener("load", startLoading, { once: true });
+      // Kareler hemen akmaya başlar: açılış ekranı zaten önde duruyor ve
+      // tam olarak bunları bekliyor (eskiden `load` olayı beklenirdi).
+      startLoading();
 
       const words = Array.from(
         section.querySelectorAll<HTMLElement>(".hero-word"),
@@ -390,15 +447,26 @@ export function Hero() {
       // ScrollReveal parametreleri (reactbits): baseOpacity 0, blurStrength 10.
       // baseOpacity 0 şart — logo ekrandayken metnin *hiç* görünmemesi gerekiyor,
       // 0.1'lik taban bile logonun üzerinde hayalet yazı bırakırdı.
-      gsap.set(words, { opacity: 0, filter: "blur(10px)", y: 14 });
+      // Zayıf cihazda blur YOK: onlarca kelimede `filter: blur()` her scroll
+      // karesinde ayrı ayrı rasterize ediliyor. Opaklık + y aynı ritmi verir.
+      const useBlur = tier === "high";
+      gsap.set(
+        words,
+        useBlur
+          ? { opacity: 0, filter: "blur(10px)", y: 14 }
+          : { opacity: 0, y: 14 },
+      );
       gsap.set(ctaRef.current, { opacity: 0, y: 20, pointerEvents: "none" });
 
       const proxy = { frame: 0 };
       const tl = gsap.timeline({
         scrollTrigger: {
+          // HeroAutoScroll pin bitişini bu id ile okur.
+          id: "hero",
           trigger: section,
           start: "top top",
-          end: () => "+=" + window.innerHeight * HERO_SCROLL_VH,
+          // Büyük viewport: URL çubuğu açılıp kapanırken mesafe değişmez.
+          end: () => "+=" + getStableViewport().h * HERO_SCROLL_VH,
           pin: true,
           scrub: 0.35,
           anticipatePin: 1,
@@ -439,13 +507,25 @@ export function Hero() {
       if (logoWrapRef.current) {
         tl.to(
           logoWrapRef.current,
-          {
-            opacity: 0,
-            scale: 0.94,
-            filter: "blur(6px)",
-            ease: "none",
-            duration: INTRO_END,
-          },
+          useBlur
+            ? {
+                opacity: 0,
+                scale: 0.94,
+                filter: "blur(6px)",
+                ease: "none",
+                duration: INTRO_END,
+              }
+            : { opacity: 0, scale: 0.94, ease: "none", duration: INTRO_END },
+          0,
+        );
+      }
+
+      // LED şeridi de logoyla aynı anda, aynı sönümle çekilir: intro bitince
+      // hero'nun altında yalnız başlık ve CTA'lar kalır.
+      if (ribbonRef.current) {
+        tl.to(
+          ribbonRef.current,
+          { opacity: 0, y: 24, ease: "none", duration: INTRO_END },
           0,
         );
       }
@@ -519,14 +599,16 @@ export function Hero() {
       // kelime görünmez, temiz devir-teslim olur.
       tl.to(
         words,
-        {
-          opacity: 1,
-          filter: "blur(0px)",
-          y: 0,
-          ease: "none",
-          duration: 0.24,
-          stagger: 0.035,
-        },
+        useBlur
+          ? {
+              opacity: 1,
+              filter: "blur(0px)",
+              y: 0,
+              ease: "none",
+              duration: 0.24,
+              stagger: 0.035,
+            }
+          : { opacity: 1, y: 0, ease: "none", duration: 0.24, stagger: 0.035 },
         INTRO_END,
       );
 
@@ -567,7 +649,10 @@ export function Hero() {
     <section
       ref={sectionRef}
       id={SECTION_IDS.hero}
-      className="relative h-dvh w-full overflow-hidden"
+      /* lvh: URL/araç çubuğu gizlenince de kareler ekranın altına kadar
+         uzanır (dvh + pin, çubuk açıkken ölçülen kısa yükseklikte kalıyordu).
+         Okunması gereken içerik aşağıda svh kutusunda. */
+      className="relative h-lvh w-full overflow-hidden"
     >
       {/* kareler yüklenene kadar görünecek poster (yüksek çözünürlüklü ilk kare) */}
       <div
@@ -580,7 +665,10 @@ export function Hero() {
       <canvas
         ref={canvasRef}
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full will-change-transform transform-gpu"
+        /* will-change / transform-gpu YOK: canvas zaten kendi katmanında;
+           ek promosyon bazı Android GPU'larında canvas yüzeyinin kopyalanırken
+           bozulmasına katkıda bulunuyordu. */
+        className="absolute inset-0 h-full w-full"
       />
 
       {/* alt bölüme yumuşak geçiş — YALNIZ alt taraftan. Üst karartma bilerek
@@ -609,12 +697,22 @@ export function Hero() {
       {!reduce && (
         <motion.div
           aria-hidden="true"
-          className="absolute inset-0"
+          className="hero-reveal absolute inset-0"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          animate={{ opacity: revealed ? 1 : 0 }}
+          transition={{ duration: 1.1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
           <div ref={sideRaysRef} className="absolute inset-0">
+            {perfTier === "low" ? (
+              // Zayıf cihaz: aynı sıcak ışığın statik yaklaşımı (WebGL yok)
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "radial-gradient(120% 90% at 100% 0%, rgb(240 201 106 / 0.32), rgb(244 247 245 / 0.08) 38%, transparent 62%)",
+                }}
+              />
+            ) : (
             <SideRays
               speed={2.5}
               rayColor1="#f0c96a"
@@ -627,13 +725,20 @@ export function Hero() {
               falloff={1}
               opacity={0.72}
               paused={raysPaused}
+              onFirstFrame={() => completeTask("side-rays")}
             />
+            )}
           </div>
         </motion.div>
       )}
 
+      {/* İlk scroll'da son kareye / yukarıda başa otomatik geçiş */}
+      {!reduce && <HeroAutoScroll />}
+
       {/* içerik katmanı */}
-      <div ref={contentRef} className="relative z-10 flex h-full flex-col">
+      {/* İçerik küçük viewport kutusunda: çubuklar açıkken de başlık, CTA ve
+          LED şeridi görünür alanda kalır; logo merkezi açılış ekranıyla aynı. */}
+      <div ref={contentRef} className="relative z-10 flex h-svh flex-col">
         {/* SIGNATURE — merkezî statik beyaz logo (yalnız intro, hareket açıkken) */}
         {!reduce && (
           <div
@@ -748,14 +853,20 @@ export function Hero() {
         )}
 
         {/* SIGNATURE şerit */}
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 20 }}
-          animate={reduce ? false : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="pb-8 sm:pb-10"
-        >
-          <LedRibbon words={ribbonWords} />
-        </motion.div>
+        {/* Dış katman: scroll ile sönüm (GSAP). İç katman: açılıştaki giriş
+            (motion). Ayrı katmanlar çünkü ikisi de opacity/transform yazıyor. */}
+        <div ref={ribbonRef} className="pb-8 sm:pb-10">
+          <motion.div
+            className="hero-reveal"
+            initial={reduce ? false : { opacity: 0, y: 28 }}
+            animate={
+              reduce ? undefined : revealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }
+            }
+            transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <LedRibbon words={ribbonWords} />
+          </motion.div>
+        </div>
       </div>
     </section>
   );

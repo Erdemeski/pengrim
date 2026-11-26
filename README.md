@@ -32,6 +32,14 @@ PORT=3000 node .next/standalone/server.js
 
 Ardından Cloudflare tunnel'ı `http://localhost:3000` adresine yönlendir. `sharp` kurulu olduğu için `next/image` optimizasyonu VM'de çalışır.
 
+**Alan adı:** kanonik adres `https://pengrim.com` (`lib/constants.ts` → `SITE_URL`; metadata, `robots.txt` ve `sitemap.xml` buradan üretilir). Tünelde `pengrim.com` için bir "Published application" rotası vardır; `www.pengrim.com` ve `pengrim.siberup.com` Cloudflare Redirect Rules ile 301 olarak apex'e yönlenir. Cloudflare'de **Rocket Loader kapalı** olmalı (React hydration'ı bozar).
+
+## Performans notları
+
+- **Tek scroll saati** (`lib/scroll-clock.ts`): Lenis GSAP ticker'ından sürülür; ScrollTrigger, BallJourney, ScrollExpandCard ve ScrollStack aynı karede aynı `scrollY` ile güncellenir. Yeni scroll-bağlı efektler kendi `scroll` dinleyicisini kurmak yerine `subscribeScroll` kullanmalı.
+- **Cihaz seviyesi** (`lib/perf-tier.ts`): düşük RAM/çekirdek, Save-Data ya da kaydırma sırasında ölçülen < 45 fps → `low`. Low'da SVG cam, alt blur şeridi, SideRays ve hero blur'ları hafifletilir. Test için `?tier=low` / `?tier=high`.
+- ScrollStack pinlemesi CSS `position: sticky` ile yapılır; ataları arasında `overflow: hidden` olmamalı.
+
 ---
 
 ## Özelleştirme
@@ -57,7 +65,7 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 `app/[locale]/layout.tsx` — Display: Archivo, Body: Inter, Mono: JetBrains Mono (`next/font`).
 
 ### Görseller
-- **Vitrin (Showcase)** ReactBits **DriftWall** duvarıdır (`components/sections/showcase.tsx` → `showcase-wall.tsx` → `components/DriftWall.tsx`). Karolar 16:9 sabit oranda, duvar tam genişlikte; üst kenar gradyanla açılır, alt kenar İletişim bölümünün çizgisine dayanır. Karoya tıklamak `showcase-lightbox.tsx` üzerinden FLIP geçişli tam ekran önizleme açar. Görseller `public/showcase/` klasöründen okunur (`.jpg/.png/.webp/.avif`) ve `next/image` ile optimize edilir; klasör boşken on-brand nötr placeholder karolar (gradient SVG data-URI) gösterilir. Sayfa statik (SSG) üretildiğinden **yeni görseller `next build` sonrası** galeriye yansır.
+- **Vitrin (Showcase)** ReactBits **DriftWall** duvarıdır (`components/sections/showcase.tsx` → `showcase-wall.tsx` → `components/DriftWall.tsx`). Karolar 16:9 sabit oranda, duvar tam genişlikte; üst kenar gradyanla açılır, alt kenar footer'daki orta saha çizgisine dayanır. Karoya tıklamak `showcase-lightbox.tsx` üzerinden FLIP geçişli tam ekran önizleme açar. Görseller `public/showcase/` klasöründen okunur (`.jpg/.png/.webp/.avif`) ve `next/image` ile optimize edilir; klasör boşken on-brand nötr placeholder karolar (gradient SVG data-URI) gösterilir. Sayfa statik (SSG) üretildiğinden **yeni görseller `next build` sonrası** galeriye yansır.
 - **Hero** arka planı 193 karelik bir scroll-scrub dizisidir; ilk kare yüksek çözünürlüklü `public/pengrim-first-frame-edited.webp`. Sayfa en üstteyken ortada statik `public/pengrim_beyaz.png` logosu gösterilir — tüm ekran boyutlarında/en-boy oranlarında.
 
   **İki kare seti var:**
@@ -74,7 +82,12 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
   > **Dikkat:** `next.config.ts` her iki kare dizinine de `Cache-Control: immutable` veriyor. Bir kareyi **aynı yolda** yeniden kodlarsanız mevcut ziyaretçiler eskisini görmeye devam eder. Kareler değişecekse yeni bir dizin altında yayınlayın (`/hero-frames-v2/`) ve `next.config.ts` ile `hero.tsx`'teki sabitleri güncelleyin.
 
 ### İletişim
-- Form kaldırıldı. `components/sections/contact.tsx` yalnızca e-posta + telefon + konumla iletişime yönlendiren bir bloktur (değerler `messages/*.json` → `footer.email/phone/address`).
+- `components/sections/contact.tsx` aynı zamanda sitenin footer'ıdır (`<footer id="iletisim">`): büyük e-posta, telefon, konum ve künye satırı. Değerler `messages/*.json` → `footer.email/phone/address`. Üst kenardaki orta saha çizgisi `pitch-markings.tsx`.
+
+### Açılış ekranı ve hero
+- `components/layout/site-loader.tsx` her girişte hero'nun kare dizisi, ışık huzmelerinin ilk karesi, fontlar ve eager görseller hazır olana kadar logoyu "yakarak" bekler (en az 2.2 sn, en fazla 10 sn). Görevler `lib/preload-store.ts`'te.
+- `components/sections/hero-autoscroll.tsx`: hero'da ilk aşağı hareket son kareye, yukarı hareket başa otomatik scroll yapar.
+- Yükseklikler `lib/viewport.ts` ile büyük viewport'a (lvh) göre ölçülür; mobil URL çubuğu açılıp kapansa da hero ve tam ekran görseller alta kadar uzanır.
 
 ---
 
@@ -82,15 +95,16 @@ Tüm metin `messages/tr.json` ve `messages/en.json` içinde. Diller `i18n/routin
 
 ```
 app/[locale]/        layout + page (bölüm kompozisyonu)
-components/layout/   header (dinamik), footer, mobil menü (StaggeredMenu),
-                     dil değiştirici, smooth-scroll, first-visit-gate
+components/layout/   header (dinamik), mobil menü (StaggeredMenu),
+                     dil değiştirici, smooth-scroll, site-loader
 components/sections/ hero, led-ribbon (signature), trust-stats, inventory,
                      how-it-works, reach, showcase (+ showcase-wall, showcase-lightbox),
-                     cta-band, contact
-components/effects/  glass-card, marquee, reveal, count-up
+                     contact (= footer)
+components/effects/  marquee, reveal, count-up, ball-journey, workflow-waves
 components/ui/        shadcn bileşenleri
 i18n/ · messages/     next-intl yapılandırması ve sözlükler
-lib/                  utils, constants, icons, hero-intro-store, hero-ready-store,
+lib/                  utils, constants, icons, hero-intro-store, preload-store,
+                      scroll-clock, perf-tier, viewport,
                       ball-anchor, prewarm, use-hydrated
 public/showcase/     vitrin görselleri (boşken placeholder)
 ```

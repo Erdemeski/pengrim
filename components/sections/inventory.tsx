@@ -4,30 +4,51 @@ import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { SectionHeading } from "@/components/layout/section-heading";
 import { Reveal } from "@/components/effects/reveal";
-import { IconChip } from "@/components/ui/icon-chip";
 import { INVENTORY, SECTION_IDS } from "@/lib/constants";
-import { ICONS } from "@/lib/icons";
-import SpotlightCard from "@/components/SpotlightCard";
 import ScrollExpandCard from "@/components/ScrollExpandCard";
+import { BroadcastFrame, StadiumPlan } from "./inventory-art";
 
 /**
- * Bento yerleşimi: 4 içerik → tam 4 hücre, boş hücre yok. Geniş hücre satır
- * değiştirirken taraf değiştiriyor (7/5 → 5/7) — bu, bir üstteki istatistik
- * bandının ve bir alttaki adım listesinin eşit-kutu ritmini kırıyor.
- * İki hücre markanın kendi çekiminden gerçek görsel taşıyor.
+ * Bento yerleşimi: 4 içerik → tam 4 hücre. Geniş hücre satır değiştirirken
+ * taraf değiştiriyor (7/5 → 5/7).
  *
- * Beşinci hücre tek başına bir satır kaplar ve scroll ile tam ekrana açılır
- * (bkz. ScrollExpandCard) — bento ritmi buradan çıkışı da bir ivmeyle yapıyor.
+ * Mobil (tek sütun) sırası: LED, Statik, Paket, Yayın — görselli ve çizimli
+ * kartlar dönüşümlü gelsin. DOM sırası DEĞİŞMİYOR (yalnız `order`):
+ * ScrollExpandCard dinlenme yüksekliğini önceki kardeşten ölçüyor.
+ *
+ * Kartlarda jenerik ikon çipi yok. Görselli kartlarda metin, fotoğrafın
+ * altındaki opak bir yayın alt bandında (lower third) duruyor — fotoğraftaki
+ * panolarla çakışıp okunmaz hale gelmiyor. Metin kartlarının görseli
+ * anlattıkları şeyin kendisi (saha planı, yayın kadrajı).
  */
-const CELLS: Record<string, { span: string; image?: string }> = {
-  led: { span: "lg:col-span-7", image: "/inventory-led-board.webp" },
-  static: { span: "lg:col-span-5" },
-  broadcast: { span: "lg:col-span-5" },
-  package: { span: "lg:col-span-7", image: "/inventory-stadium.webp" },
+const CELLS: Record<string, { span: string; order: string; image?: string }> = {
+  led: { span: "lg:col-span-7", order: "max-lg:order-1", image: "/inventory-led-board.webp" },
+  static: { span: "lg:col-span-5", order: "max-lg:order-2" },
+  broadcast: { span: "lg:col-span-5", order: "max-lg:order-4" },
+  package: { span: "lg:col-span-7", order: "max-lg:order-3", image: "/inventory-stadium.webp" },
 };
 
 export function Inventory() {
   const t = useTranslations("inventory");
+
+  const art: Record<string, React.ReactNode> = {
+    static: (
+      <StadiumPlan
+        className="max-w-[22rem]"
+        labels={{
+          goalBack: t("art.goalBack"),
+          stands: t("art.stands"),
+          tunnel: t("art.tunnel"),
+        }}
+      />
+    ),
+    broadcast: (
+      <BroadcastFrame
+        className="max-w-[22rem]"
+        labels={{ live: t("art.live"), onScreen: t("art.onScreen") }}
+      />
+    ),
+  };
 
   return (
     <Section id={SECTION_IDS.inventory}>
@@ -36,7 +57,6 @@ export function Inventory() {
 
         <div className="mt-12 grid gap-4 lg:grid-cols-12">
           {INVENTORY.map((item, i) => {
-            const Icon = ICONS[item.icon];
             const cell = CELLS[item.key];
             const title = t(`items.${item.key}.title`);
             const desc = t(`items.${item.key}.desc`);
@@ -45,50 +65,45 @@ export function Inventory() {
               <Reveal
                 key={item.key}
                 delay={i * 0.08}
-                className={cell.span}
+                className={`${cell.span} ${cell.order}`}
               >
                 {cell.image ? (
-                  <article className="group relative flex h-full min-h-76 flex-col justify-end overflow-hidden rounded-2xl border border-border/60">
-                    <Image
-                      src={cell.image}
-                      alt=""
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 58vw"
-                      className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                    />
-                    {/* metin kontrastı için scrim — görselin üst yarısını serbest
-                        bırakacak kadar hafif; light modda beyaz perde daha da düşük */}
-                    <div
-                      aria-hidden="true"
-                      className="absolute inset-0 bg-linear-to-t from-background via-background/60 to-transparent dark:from-background/88 dark:via-background/55"
-                    />
-                    <div className="relative flex flex-col gap-3 p-6 sm:p-7">
-                      <IconChip>
-                        <Icon />
-                      </IconChip>
-                      <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                  <article className="group flex h-full min-h-76 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card">
+                    <div className="relative min-h-44 flex-1 overflow-hidden sm:min-h-52">
+                      <Image
+                        src={cell.image}
+                        alt=""
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 58vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                      />
+                    </div>
+                    {/* yayın alt bandı */}
+                    <div className="relative border-t border-border/60 px-6 py-5 sm:px-7 sm:py-6">
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-y-5 left-0 w-[3px] rounded-r-full bg-led sm:inset-y-6"
+                      />
+                      <h3 className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                         {title}
                       </h3>
-                      <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">
+                      <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-muted-foreground">
                         {desc}
                       </p>
                     </div>
                   </article>
                 ) : (
-                  <SpotlightCard
-                    spotlightColor="rgba(130, 230, 150, 0.16)"
-                    className="flex h-full min-h-76 flex-col justify-end gap-3 p-6 sm:p-7"
-                  >
-                    <IconChip>
-                      <Icon />
-                    </IconChip>
-                    <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                  <article className="flex h-full min-h-76 flex-col rounded-2xl border border-border/60 bg-card p-6 sm:p-7">
+                    <div className="grid flex-1 place-items-center pb-6">
+                      {art[item.key]}
+                    </div>
+                    <h3 className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                       {title}
                     </h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                       {desc}
                     </p>
-                  </SpotlightCard>
+                  </article>
                 )}
               </Reveal>
             );
@@ -97,20 +112,9 @@ export function Inventory() {
           {/* Reveal ile sarılmaz: motion.div'in transform animasyonu tam da
               açılmanın başladığı anda tetikleniyor ve ölçümü kaydırıyor. */}
           <ScrollExpandCard
-            className="lg:col-span-12 -mb-12 sm:-mb-16 md:-mb-20"
+            className="lg:col-span-12 max-lg:order-5 -mb-12 sm:-mb-16 md:-mb-20"
             src="/inventory-feature.webp"
-            /*             icon={
-                          <IconChip>
-                            <ICONS.Expand />
-                          </IconChip>
-                        }
-                        title={t("feature.title")}
-                        desc={t("feature.desc")}
-                        hint={t("feature.hint")}
-             */
-            icon={
-              <></>
-            }
+            icon={<></>}
             title={t("feature.title")}
             desc={t("feature.desc")}
             hint={t("feature.hint")}
@@ -118,6 +122,9 @@ export function Inventory() {
             /* Kadrajı görseldeki futbol topuna hizalar ve konumunu
                BallJourney'e yayınlar. */
             ballAnchor
+            /* Tam ekrana ulaşınca beklemeden sonraki bölüme geç: eski 0.28vh'lik
+               sabit kalma, kaydırılsa da "takıldı" gibi görünüyordu. */
+            holdRatio={0}
           />
         </div>
       </Container>

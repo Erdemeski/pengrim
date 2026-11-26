@@ -54,3 +54,6 @@ export const CHANNELS: ReadonlyArray<{ key: string; icon: IconName }> = [
   { key: "stadium", icon: "Users" },
 ];
 
+
+/** Kanonik alan adı — metadata, robots ve sitemap buradan türetilir. */
+export const SITE_URL = "https://pengrim.com";

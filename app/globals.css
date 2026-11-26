@@ -472,3 +472,26 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ShinyText parıltısı (bkz. components/ShinyText.tsx) — upstream'in
+   `150% - p*2%` eşlemesi: 0% → 150%, 100% → -50%. */
+@keyframes shiny-text {
+  from {
+    background-position: 150% center;
+  }
+  to {
+    background-position: -50% center;
+  }
+}
+
+/* JS kapalıyken açılış ekranı hiç kalkmazdı; hero'nun giriş katmanları da
+   (motion'ın SSR'deki opacity:0'ı) görünür olmalı. */
+@media (scripting: none) {
+  .site-loader {
+    display: none !important;
+  }
+  .hero-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

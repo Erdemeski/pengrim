@@ -1,7 +1,7 @@
 "use client";
 
 import type { SpringOptions } from "motion/react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { motion, useMotionValue, useSpring } from "motion/react";
 
 interface TiltedCardProps {
@@ -56,10 +56,16 @@ export default function TiltedCard({
     mass: 1,
   });
 
-  const [lastY, setLastY] = useState(0);
+  // ref, state DEĞİL: her mousemove'da tüm kartı yeniden render ettiriyordu.
+  const lastYRef = useRef(0);
+
+  // Dokunmatik cihazda tıklama sentetik mouseenter üretip kartı büyütülmüş
+  // halde bırakıyordu; eğim efekti yalnız gerçek hover'ı olan cihazlarda.
+  const canHover = () =>
+    typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches;
 
   function handleMouse(e: React.MouseEvent<HTMLElement>) {
-    if (!ref.current) return;
+    if (!ref.current || !canHover()) return;
 
     const rect = ref.current.getBoundingClientRect();
     const offsetX = e.clientX - rect.left - rect.width / 2;
@@ -74,12 +80,13 @@ export default function TiltedCard({
     x.set(e.clientX - rect.left);
     y.set(e.clientY - rect.top);
 
-    const velocityY = offsetY - lastY;
+    const velocityY = offsetY - lastYRef.current;
     rotateFigcaption.set(-velocityY * 0.6);
-    setLastY(offsetY);
+    lastYRef.current = offsetY;
   }
 
   function handleMouseEnter() {
+    if (!canHover()) return;
     scale.set(scaleOnHover);
     opacity.set(1);
   }

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Pengrim | Spor Reklamcılığı",
-    "description": "Pengrim, spor karşılaşmalarında LED çevre panoları, stadyum içi envanter ve karşılaşmaların yayını görünürlüğünü markalarla buluşturur. Maç ve lig seçiminden raporlamaya kadar süreci uçtan uca yönetir."
+    "description": "Pengrim, futbol maçlarında LED çevre panosu, stadyum içi reklam alanı ve yayın görünürlüğü satar. Maç seçiminden maç sonu raporuna kadar süreci yürütür."
   },
   "nav": {
     "inventory": "Envanter",
@@ -20,9 +20,9 @@
   "hero": {
     "eyebrow": "SPOR REKLAMCILIĞI",
     "headline": "Markanızı sahanın kenarına taşıyın.",
-    "subline": "Doğru maç, doğru lig, doğru kitle.",
+    "subline": "Maçı, panoyu ve yayın süresini birlikte seçiyoruz.",
     "ctaPrimary": "Teklif alın",
-    "ctaSecondary": "İşleyiş nasıl?",
+    "ctaSecondary": "Nasıl çalışıyoruz?",
     "ribbon": {
       "a": "LED ÇEVRE PANO",
       "b": "STADYUM ENVANTERİ",
@@ -32,109 +32,113 @@
   },
   "trust": {
     "stats": {
-      "reach": "YILLIK DENEYİM",
-      "matches": "MAÇ ORGANİZASYONU",
-      "teams": "SPOR KULÜBÜ VE STADYUMU",
-      "brands": "MARKA KAMPANYASI"
-    },
-    "note": ""
+      "reach": "Yıl deneyim",
+      "matches": "Maç organizasyonu",
+      "teams": "Kulüp ve stadyum",
+      "brands": "Marka kampanyası"
+    }
   },
   "inventory": {
-    "title": "Sahanın her karesi bir reklam alanı",
-    "subtitle": "Markanızı maçın akışına yerleştiriyoruz: yayında, tribünde ve ekranda.",
+    "title": "Sahada nerede görünürsünüz?",
+    "subtitle": "LED panoları, stadyum içi alanları ve yayın süresini tek teklifte topluyoruz.",
     "items": {
       "led": {
         "title": "LED çevre panoları",
-        "desc": "Saha kenarındaki dijital panolarda dönüşümlü, animasyonlu marka görünürlüğü. Kameranın tam karşısında."
+        "desc": "Saha kenarındaki dijital panolarda dönüşümlü marka yayını. Ana kamera panoları tam karşıdan çeker."
       },
       "static": {
-        "title": "Stadyum içi envanter",
-        "desc": "Kale arkası, tribün ve tünel brandingi; statik panolar ve stadyum içindeki tüm marka temas noktaları."
+        "title": "Stadyum içi alanlar",
+        "desc": "Kale arkası panolar, tribün ve tünel brandingi. Taraftar stada girdiği andan itibaren görür."
       },
       "broadcast": {
         "title": "Yayın görünürlüğü",
-        "desc": "TV ve dijital yayın akışında garantili marka süresi; kamera planlarına göre optimize edilmiş yerleşim."
+        "desc": "Ekranda kalacağınız süreyi kamera planlarına göre baştan belirliyor, maçtan sonra dakika dakika raporluyoruz."
       },
       "package": {
-        "title": "Paket & danışmanlık",
-        "desc": "Maç, lig ve kitleye göre kurgulanan kampanya paketleri; satın alma ve raporlamayı biz yönetelim."
+        "title": "Paket ve danışmanlık",
+        "desc": "Bütçenize ve hedef kitlenize uyan maçları seçiyor, satın almadan rapora kadar işi biz yürütüyoruz."
       }
     },
     "feature": {
       "title": "",
       "desc": "",
       "hint": "",
-      "caption": "Kameranın gördüğü her açıda markanız sahada."
+      "caption": "Kamera nereye dönerse dönsün, markanız kadrajda."
+    },
+    "art": {
+      "goalBack": "Kale arkası",
+      "stands": "Tribün",
+      "tunnel": "Tünel",
+      "live": "CANLI",
+      "onScreen": "Maç boyunca markanın ekranda kaldığı dakikalar"
     }
   },
   "how": {
     "eyebrow": "İŞ AKIŞI",
     "title": "Maç gününe dört adımda hazır",
-    "subtitle": "Briften yayına; süreci sizin için şeffaf ve raporlanabilir tutuyoruz.",
+    "subtitle": "Her adımda ne alacağınızı ve maç sonunda neyi raporlayacağımızı baştan yazıyoruz.",
     "steps": {
       "select": {
-        "title": "Maç & lig seçimi",
-        "desc": "Hedef kitlenize ve bütçenize göre maçları, ligleri ve stadyumları birlikte belirliyoruz."
+        "title": "Maç ve lig seçimi",
+        "desc": "Hedef kitlenize ve bütçenize göre maçları, ligleri ve stadyumları birlikte seçiyoruz."
       },
       "package": {
-        "title": "Reklam alanı & paket",
-        "desc": "LED süresi, statik envanter ve yayın görünürlüğünü içeren kampanya paketinizi kurguluyoruz."
+        "title": "Reklam alanı ve paket",
+        "desc": "LED süresi, stadyum içi alanlar ve yayın görünürlüğünden oluşan paketi hazırlıyoruz."
       },
       "approve": {
-        "title": "Satın alma & onay",
-        "desc": "Sözleşme, kreatif onayı ve yerleşim planı; tek bir noktadan, net şartlarla."
+        "title": "Satın alma ve onay",
+        "desc": "Sözleşmeyi, kreatif onayını ve yerleşim planını tek muhatapla netleştiriyoruz."
       },
       "report": {
-        "title": "Yayın & raporlama",
-        "desc": "Maç sonrası görünürlük süresi, kamera planları ve erişim metriklerini raporluyoruz."
+        "title": "Yayın ve raporlama",
+        "desc": "Maçtan sonra ekranda kalma süresini, kamera planlarını ve erişim verilerini raporluyoruz."
       }
     }
   },
   "reach": {
-    "title": "Tek maç, milyonlarca temas",
-    "subtitle": "Spor; markanızı aynı anda stadyumda, ekranda ve sosyal medyada görünür kılar.",
+    "title": "Tribündeki pano evlere de girer",
+    "subtitle": "Pano maç boyunca hem stattan hem yayından görünür. Özet kliplerle maçtan sonra da dolaşmaya devam eder.",
     "channels": {
       "tv": {
-        "title": "TV yayını",
-        "desc": "Canlı maç yayınında kesintisiz marka süresi."
+        "title": "Canlı yayın",
+        "desc": "Panolar maç boyunca kadrajın içinde kalır."
       },
       "ott": {
-        "title": "Dijital & OTT",
-        "desc": "Online yayın ve özet platformlarında tekrar tekrar görünürlük."
+        "title": "Dijital ve OTT",
+        "desc": "Online yayınlarda ve maç özetlerinde yeniden izlenir."
       },
       "social": {
         "title": "Sosyal klipler",
-        "desc": "Gol ve özet kliplerinde organik olarak yeniden dağıtılan marka."
+        "desc": "Gol klipleri paylaşıldıkça pano da onlarla birlikte dolaşır."
       },
       "stadium": {
-        "title": "Stadyum içi",
-        "desc": "Tribündeki on binlerce taraftarla doğrudan temas."
+        "title": "Stadyumda",
+        "desc": "Tribündeki taraftar panoyu doksan dakika karşısında görür."
       }
     }
   },
   "showcase": {
-    "title": "Sahada nasıl göründüğü",
-    "subtitle": "Örnek yerleşimler ve yayın kareleri. Görseller kurumsal kimlik sağlandığında güncellenecektir.",
-    "placeholder": "Örnek karolar, gerçek maç kareleri yakında",
+    "placeholder": "Örnek görseller. Gerçek maç kareleri eklenecek.",
     "imageAlt": "Saha yerleşimi görseli {n}",
     "expand": "Görseli büyüt",
     "close": "Önizlemeyi kapat"
   },
   "contact": {
-    "eyebrow": "İLETİŞİM",
-    "title": "Doğrudan bize ulaşın",
-    "subtitle": "Kampanyanızı konuşalım. E-posta ya da telefonla yazın; size özel maç ve paket önerisiyle dönelim.",
+    "title": "Hangi maçta görünmek istersiniz?",
+    "subtitle": "Maçları ve bütçenizi yazın, uygun alanları ve fiyatı gönderelim.",
     "emailLabel": "E-posta",
     "phoneLabel": "Telefon",
     "addressLabel": "Konum"
   },
   "footer": {
-    "tagline": "Markaları sporun en görünür anlarıyla buluşturuyoruz.",
-    "navTitle": "Keşfet",
-    "contactTitle": "İletişim",
+    "navTitle": "Bölümler",
     "email": "info@pengrim.com",
     "phone": "+90 (212) 000 00 00",
     "address": "İstanbul, Türkiye",
     "rights": "Tüm hakları saklıdır."
+  },
+  "loader": {
+    "label": "Site yükleniyor"
   }
 }

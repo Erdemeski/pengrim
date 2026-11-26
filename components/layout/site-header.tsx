@@ -39,7 +39,8 @@ export function SiteHeader() {
   const t = useTranslations("nav");
   const [scrolled, setScrolled] = useState(false);
   const mounted = useHydrated();
-  const [activeIndex, setActiveIndex] = useState(0);
+  // -1 = hiçbir bölüm aktif değil (hero ve istatistik bandında)
+  const [activeIndex, setActiveIndex] = useState(-1);
   // Mobil menü paneli açıkken header'ın cam arka planı ve logosu gizlenir:
   // panel header'ın ALTINDAN (z-40 < z-50) geçtiği için aksi halde koyu cam
   // pil ve beyaz wordmark panelin üzerinde asılı kalıyor, açık temada da
@@ -97,10 +98,9 @@ export function SiteHeader() {
             bestId = id;
           }
         });
-        if (bestId) {
-          const idx = ids.indexOf(bestId);
-          if (idx !== -1) setActiveIndex(idx);
-        }
+        // Orta bantta navigasyondaki bölümlerden hiçbiri yoksa (hero'ya ya da
+        // istatistik bandına dönüldü) hiçbir sekme aktif görünmemeli.
+        setActiveIndex(bestId ? ids.indexOf(bestId) : -1);
       },
       // viewport'un orta bandını gözlem alanı yap → tek bir aktif bölüm
       { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
@@ -116,14 +116,14 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-500",
+        "fixed inset-x-0 top-0 z-50 transition-[padding] duration-500",
         scrolled ? "py-2" : "py-3 sm:py-4",
       )}
     >
       <Container>
         {/* `dark`: içerik her iki temada açık metin/token kullanır */}
         <div
-          className="dark relative text-foreground transition-all duration-500"
+          className="dark relative text-foreground transition-[height] duration-500"
           style={{ height: barHeight }}
         >
           {/* ARKA PLAN katmanı — içerikten ayrı: intro sürerken sönümlenir
@@ -167,6 +167,7 @@ export function SiteHeader() {
               <GooeyNav
                 items={navItems}
                 activeIndex={activeIndex}
+                initialActiveIndex={-1}
                 particleCount={10}
                 animationTime={500}
                 particleDistances={[80, 8]}

@@ -143,6 +143,15 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
   };
   useEffect(() => {
     if (!navRef.current || !containerRef.current) return;
+    // activeIndex < 0 → hiçbir sekme aktif değil: hap ve metin katmanı gizlenir
+    const idle = activeIndex < 0;
+    filterRef.current?.classList.toggle('is-idle', idle);
+    textRef.current?.classList.toggle('is-idle', idle);
+    if (idle) {
+      filterRef.current?.classList.remove('active');
+      textRef.current?.classList.remove('active');
+      return;
+    }
     const activeLi = navRef.current.querySelectorAll('li')[activeIndex] as HTMLElement;
     if (activeLi) {
       updateEffectPosition(activeLi);
@@ -174,12 +183,25 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             place-items: center;
             z-index: 1;
           }
+          /* Tıklamada beyaz hap (.effect.filter, mix-blend: lighten) menünün
+             ÜSTÜNE çiziliyor ve altındaki siyah etiketi beyaza çeviriyor; o
+             yüzden aktif etiket bu katmanda bir kez daha, en üstte çizilir.
+             Yerel düzeltme: metrikler <a> ile birebir (text-sm, nowrap) —
+             eskiden 16px ve satır kırarak çizildiği için etiket çift
+             görünüyordu ("Vitrin Vitrin"). */
           .effect.text {
             color: white;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            white-space: nowrap;
             transition: color 0.3s ease;
           }
           .effect.text.active {
             color: black;
+          }
+          /* Hiçbir bölüm aktif değilken (hero, istatistik bandı) */
+          .effect.is-idle {
+            opacity: 0;
           }
           .effect.filter {
             filter: blur(7px) contrast(100) blur(0);
@@ -303,7 +325,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
         <nav className="flex relative" style={{ transform: 'translate3d(0,0,0.01px)' }}>
           <ul
             ref={navRef}
-            className="flex gap-8 list-none p-0 px-4 m-0 relative z-[3]"
+            className="flex gap-1 xl:gap-4 list-none p-0 px-2 xl:px-4 m-0 relative z-[3]"
             style={{
               color: 'white',
               textShadow: '0 1px 1px hsl(205deg 30% 10% / 0.2)'
@@ -320,7 +342,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
                   href={item.href}
                   onClick={e => handleClick(e, index)}
                   onKeyDown={e => handleKeyDown(e, index)}
-                  className="outline-none py-[0.6em] px-[1em] inline-block"
+                  className="outline-none py-[0.6em] px-[0.9em] inline-block whitespace-nowrap text-sm"
                 >
                   {item.label}
                 </a>

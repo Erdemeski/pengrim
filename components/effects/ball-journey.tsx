@@ -15,14 +15,18 @@ import {
   subscribeBallAnchorGeom,
   type BallAnchorGeom,
 } from "@/lib/ball-anchor";
+import { subscribeScroll } from "@/lib/scroll-clock";
+import { getStableViewport, subscribeViewport } from "@/lib/viewport";
 
 /**
  * Envanter fotoğrafındaki futbol topunun, tam ekran fazının sonunda görselden
  * "kopup" iş akışı kartlarının **arkasında** dolaşan bağımsız bir nesneye
  * dönüşmesi. Üç faz var, üçü de `window.scrollY`'nin **saf fonksiyonu**:
  *
- *   Tutunma  scrollY < detachY   → top fotoğraftaki topun üstünde durur;
- *                                  kart tam ekrana yaklaşırken yumuşakça belirir
+ *   Tutunma  scrollY < detachY   → bu bileşen GİZLİ. Top, ScrollExpandCard'ın
+ *                                  fotoğraf sarmalayıcısının İÇİNDE çiziliyor
+ *                                  (fotoğrafa piksel kilitli, JS gecikmesi
+ *                                  yok); belirme de orada.
  *   Yolculuk 0 ≤ q ≤ 1           → sağ → (kartların arkasından) sol → (arkadan) sağ
  *   Park     q ≥ 1               → bölümün ALT SINIRINA sıfırlanır, sonra
  *                                  bölümle birlikte yukarı kayıp çıkar
@@ -49,10 +53,6 @@ const EDGE_PAD = 10;
 
 /** Park yüksekliği (viewport oranı) — bölüm dibi gelene kadar burada asılı kalır. */
 const PARK_Y = 0.72;
-
-/** Yumuşak belirme penceresi — kartın açılma ilerlemesi (p) üzerinden. */
-const FADE_IN0 = 0.72;
-const FADE_IN1 = 0.94;
 
 /**
  * Yeşile geçiş penceresi — yolculuk ilerlemesi (q) üzerinden. Top fotoğraftan
@@ -224,10 +224,7 @@ export function BallJourney() {
       hidden: true,
       key: "",
     };
-    let raf = 0;
     let roTimer = 0;
-    let lastW = 0;
-    let lastH = 0;
 
     const hide = () => {
       if (st.hidden) return;
@@ -286,7 +283,7 @@ export function BallJourney() {
     const measure = () => {
       const g = getBallAnchorGeom();
       const vw = document.documentElement.clientWidth;
-      const vh = window.innerHeight;
+      const vh = getStableViewport().h;
       const sec = document.getElementById(SECTION_IDS.how);
 
       st.enabled = !reduce && g.enabled && g.nw > 0 && !!sec;
@@ -359,26 +356,14 @@ export function BallJourney() {
       st.key = "";
     };
 
-    const apply = () => {
+    const apply = (y0: number) => {
       if (!st.enabled || !st.geom) return;
-      const y0 = window.scrollY;
 
       if (y0 < st.detachY) {
-        // Tutunma: fotoğraftaki topun tam üstünde, tam boyutunda.
-        const a = computeBallAnchor(st.geom, y0);
-        const d = a.d;
-        const r = d / 2;
-        const x = fit(a.x, r, st.vw);
-        const y = fit(a.y, r, st.vh);
-        // Kartın görünen dikdörtgeninin dışına taşarsa sönümle — normalde
-        // belirme penceresi bunu zaten garantiler, güvenlik ağı olarak durur.
-        const inside =
-          smoothstep(0, 40, a.clipBottom - y) *
-          smoothstep(0, 40, y - a.clipTop) *
-          smoothstep(0, 40, a.clipRight - x) *
-          smoothstep(0, 40, x - a.clipLeft);
-        // Envanterdeyken top BEYAZ: yeşil katman tamamen saydam.
-        write(x, y, d, 0, smoothstep(FADE_IN0, FADE_IN1, a.open) * inside, 0);
+        // Tutunma: top fotoğrafın içinde (ScrollExpandCard) çiziliyor. Devir
+        // anında iki katman da aynı formülden (computeBallAnchor) konumlandığı
+        // ve aynı scroll saati karesinde güncellendiği için sıçrama yok.
+        hide();
         return;
       }
 
@@ -407,31 +392,14 @@ export function BallJourney() {
       write(st.parkX, y, st.parkR * 2, st.roll[ROLL_SAMPLES], 1, 1);
     };
 
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        apply();
-      });
-    };
-
     const remeasure = () => {
       measure();
-      apply();
+      apply(window.scrollY);
     };
 
     const onResize = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      // Mobil URL çubuğu ölü bandı — ScrollExpandCard ile aynı eşik.
-      if (w === lastW && Math.abs(h - lastH) <= 120) return;
-      lastW = w;
-      lastH = h;
       remeasure();
     };
-
-    lastW = window.innerWidth;
-    lastH = window.innerHeight;
     remeasure();
 
     // Bölümün yüksekliği (font/görsel yüklemesi) değişince park hesabı kayar.
@@ -446,18 +414,16 @@ export function BallJourney() {
     document.fonts?.ready.then(remeasure).catch(() => {});
 
     const unsubscribe = subscribeBallAnchorGeom(remeasure);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
+    const unsubScroll = subscribeScroll(apply);
+    // Yalnız gerçek boyut değişiminde (URL çubuğu animasyonunda değil).
+    const unsubViewport = subscribeViewport(onResize);
 
     return () => {
-      if (raf) cancelAnimationFrame(raf);
       if (roTimer) clearTimeout(roTimer);
       ro.disconnect();
       unsubscribe();
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
+      unsubScroll();
+      unsubViewport();
       host.style.visibility = "hidden";
       host.style.opacity = "0";
       host.style.transform = "";

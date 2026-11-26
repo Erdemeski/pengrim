@@ -1,6 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
 import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
 import { Hero } from "@/components/sections/hero";
 import { TrustStats } from "@/components/sections/trust-stats";
 import { Inventory } from "@/components/sections/inventory";
@@ -25,9 +24,9 @@ export default async function HomePage({ params }: Props) {
         <HowItWorks />
         <Reach />
         <Showcase />
-        <Contact />
       </main>
-      <SiteFooter />
+      {/* İletişim bölümü aynı zamanda sitenin footer'ı */}
+      <Contact />
     </>
   );
 }

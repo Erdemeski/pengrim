@@ -25,6 +25,8 @@ interface SideRaysProps {
    * `DriftWall` da aynı kalıbı izliyor.
    */
   paused?: boolean;
+  /** Yerel ek: WebGL ilk karesini çizdiğinde bir kez çağrılır (açılış ekranı bekler). */
+  onFirstFrame?: () => void;
   className?: string;
 }
 
@@ -61,6 +63,7 @@ export default function SideRays({
   falloff = 2.0,
   opacity = 1.0,
   paused = false,
+  onFirstFrame,
   className = "",
 }: SideRaysProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -68,6 +71,10 @@ export default function SideRays({
   // o dizi her değiştiğinde tüm GL context yeniden kuruluyor. Döngüyü ref +
   // ayrı bir effect üzerinden yönetiyoruz.
   const pausedRef = useRef(paused);
+  const onFirstFrameRef = useRef(onFirstFrame);
+  useEffect(() => {
+    onFirstFrameRef.current = onFirstFrame;
+  }, [onFirstFrame]);
   const resumeRef = useRef<(() => void) | null>(null);
   const uniformsRef = useRef<Record<string, { value: number | number[] }> | null>(null);
   const rendererRef = useRef<Renderer | null>(null);
@@ -114,7 +121,8 @@ export default function SideRays({
       if (!containerRef.current) return;
 
       const renderer = new Renderer({
-        dpr: Math.min(window.devicePixelRatio, 2),
+        // Yumuşak ışık huzmeleri: 1×'in üstü ekranda fark yaratmıyor, fill-rate'i 4× artırıyordu.
+        dpr: Math.min(window.devicePixelRatio || 1, 1),
         alpha: true,
       });
       rendererRef.current = renderer;
@@ -221,7 +229,7 @@ void main() {
 
       const updateSize = () => {
         if (!containerRef.current || !renderer) return;
-        renderer.dpr = Math.min(window.devicePixelRatio, 2);
+        renderer.dpr = Math.min(window.devicePixelRatio || 1, 1);
         const { clientWidth: w, clientHeight: h } = containerRef.current;
         renderer.setSize(w, h);
         uniforms.iResolution.value = [w * renderer.dpr, h * renderer.dpr];
@@ -243,6 +251,11 @@ void main() {
           renderer.render({ scene: mesh });
         } catch {
           return;
+        }
+        if (onFirstFrameRef.current) {
+          const cb = onFirstFrameRef.current;
+          onFirstFrameRef.current = undefined;
+          cb();
         }
         if (pausedRef.current) {
           // Son kare çizili kalır; yeni kare planlanmaz. lastT sıfırlanır ki

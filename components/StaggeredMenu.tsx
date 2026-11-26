@@ -614,7 +614,12 @@ export default function StaggeredMenu({
   const panelMarkup = (
     <div
       ref={scopeRef}
-      className="sm-scope pointer-events-none fixed inset-0 z-40 overflow-hidden lg:hidden"
+      // `inset-0` DEĞİL: Android/Samsung'da URL ve alt araç çubuğu açılıp
+      // kapanırken `inset-0`'lı sabit katman bir an küçük viewport'a göre
+      // ölçülüp panel kaymış/eksik görünüyordu. `100lvh` (büyük viewport)
+      // çubuklar ne durumda olursa olsun ekranı tamamen kaplar; panel içeriği
+      // ise aşağıda `100dvh`'ye göre boşluk bırakır (CTA çubuğun altında kalmaz).
+      className="sm-scope pointer-events-none fixed left-0 right-0 top-0 z-40 h-screen overflow-hidden lg:hidden"
       data-position={position}
       data-open={open || undefined}
       style={{ ["--sm-accent" as string]: accentColor } as React.CSSProperties}
@@ -667,6 +672,8 @@ export default function StaggeredMenu({
         id={panelId}
         ref={panelRef}
         className="staggered-menu-panel pointer-events-auto absolute inset-y-0 right-0 z-10 flex flex-col overflow-y-auto"
+        // Lenis panel kaydırmasına karışmasın; kaydırma sayfaya/URL çubuğuna zincirlenmesin.
+        data-lenis-prevent
         aria-label={labels.open}
       >
         <div className="flex flex-1 flex-col gap-5">
@@ -715,10 +722,19 @@ export default function StaggeredMenu({
 .sm-scope[data-position='left']:not([data-ready]) .staggered-menu-panel,
 .sm-scope[data-position='left']:not([data-ready]) .sm-prelayer { transform: translateX(-100%); }
 
+.sm-scope {
+  height: 100vh;
+  height: 100lvh;
+  overscroll-behavior: contain;
+}
+/* Açıkta kalan şeritte sürükleme arkadaki sayfayı kaydırmasın */
+.sm-scope .sm-scrim { touch-action: none; }
 .sm-scope .staggered-menu-panel {
   /* Tam genişlik değil: açıkta kalan şerit menünün bir katman olduğunu
      okutuyor ve dışarı tıklayıp kapatmaya yer bırakıyor. */
   width: 85%;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   /* Kendi kompozit katmanına al. Bu panel 85vw × 100vh ve İKİ büyük
      radial-gradient taşıyor; promosyon olmadan tarayıcı animasyonun her
      karesinde bu yüzeyi yeniden boyuyor. Panel ayrıca overflow:hidden bir
@@ -726,6 +742,9 @@ export default function StaggeredMenu({
      içeri girdiği anda — animasyonun ilk karelerinde — düşüyordu. */
   will-change: transform;
   padding: 6.5rem 1.5rem 2rem;
+  /* Kapsayıcı 100lvh; görünür alan 100dvh. Aradaki fark (açık araç çubuğu)
+     kadar alttan boşluk → alttaki CTA her durumda görünür. */
+  padding-bottom: calc(2rem + 100lvh - 100dvh + env(safe-area-inset-bottom, 0px));
   background: var(--popover);
   color: var(--foreground);
   background-image:

@@ -1,96 +1,105 @@
 import { useTranslations } from "next-intl";
-import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react";
 import { Container } from "@/components/layout/container";
-import { Section } from "@/components/layout/section";
-import { SectionHeading } from "@/components/layout/section-heading";
-import { GlassCard } from "@/components/effects/glass-card";
-import { IconChip } from "@/components/ui/icon-chip";
-import { SECTION_IDS } from "@/lib/constants";
+import { Logo } from "@/components/layout/logo";
+import { AnchorLink } from "@/components/layout/anchor-link";
+import { NAV_ITEMS, SECTION_IDS } from "@/lib/constants";
+import { PitchMarkings } from "./pitch-markings";
+import { FooterAurora } from "./footer-aurora";
 
+/**
+ * İletişim = sitenin footer'ı.
+ *
+ * Eskiden ayrı bir iletişim kartı ve altında aynı e-posta/telefon/adresi
+ * tekrar eden bir footer vardı. Artık tek bölüm: üstte orta saha çizgisi
+ * Vitrin duvarının alt kenarına oturur (bkz. PitchMarkings), e-posta adresi
+ * bölümün asıl öğesi olarak büyük display tipte durur, altta tek satırlık
+ * künye.
+ */
 export function Contact() {
   const t = useTranslations("contact");
+  const tn = useTranslations("nav");
   const tf = useTranslations("footer");
   const email = tf("email");
   const phone = tf("phone");
   const address = tf("address");
   const telHref = `tel:${phone.replace(/[^+\d]/g, "")}`;
+  const year = new Date().getFullYear();
 
   return (
-    // Üst kenarda çizgi yok: Vitrin duvarı alt gradyanıyla buraya sönümlenerek
-    // bağlanıyor, keskin bir sınır o geçişi bozardı.
-    <Section id={SECTION_IDS.contact} className="bg-muted/40">
-      <Container>
-        <GlassCard
-          strong
-          className="relative overflow-hidden p-7 sm:p-10 md:p-14"
+    <footer
+      id={SECTION_IDS.contact}
+      className="relative isolate scroll-mt-24 overflow-hidden"
+    >
+      <PitchMarkings />
+
+      <Container className="relative pt-24 pb-16 sm:pt-32 sm:pb-20 md:pt-40">
+        <h2 className="max-w-3xl text-balance font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl">
+          {t("title")}
+        </h2>
+        <p className="mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+          {t("subtitle")}
+        </p>
+
+        {/* Bölümün asıl öğesi: e-posta adresinin kendisi */}
+        <a
+          href={`mailto:${email}`}
+          className="group relative mt-12 inline-block max-w-full break-words font-display text-[clamp(2rem,8.5vw,6rem)] font-extrabold leading-[1.05] tracking-tight text-foreground outline-none transition-colors hover:text-led focus-visible:text-led sm:mt-16"
         >
-          {/* saha kenarı LED parıltısı — köşede kısıtlı aksan */}
-          <div
+          {email}
+          <span
             aria-hidden="true"
-            className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full bg-led/10 blur-3xl"
+            className="absolute inset-x-0 -bottom-1 h-[3px] origin-left scale-x-0 bg-led transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
           />
+        </a>
 
-          <div className="relative grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-16">
-            <SectionHeading
-              eyebrow={t("eyebrow")}
-              title={t("title")}
-              subtitle={t("subtitle")}
-            />
-
-            <div className="flex flex-col gap-3">
-              <a
-                href={`mailto:${email}`}
-                className="group flex items-center gap-4 rounded-2xl border border-border/60 bg-card/50 p-5 transition-all hover:border-led/50 hover:bg-card/80"
-              >
-                <IconChip className="group-hover:bg-led/20">
-                  <Mail />
-                </IconChip>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-xs text-muted-foreground">
-                    {t("emailLabel")}
-                  </span>
-                  <span className="block truncate text-lg font-semibold tracking-tight text-foreground">
-                    {email}
-                  </span>
-                </span>
-                <ArrowUpRight className="size-5 shrink-0 text-muted-foreground transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-led" />
-              </a>
-
+        <dl className="mt-10 grid gap-6 sm:mt-12 sm:grid-cols-2 sm:gap-10 md:max-w-2xl">
+          <div className="flex flex-col gap-1.5">
+            <dt className="text-sm text-muted-foreground">{t("phoneLabel")}</dt>
+            <dd>
               <a
                 href={telHref}
-                className="group flex items-center gap-4 rounded-2xl border border-border/60 bg-card/50 p-5 transition-all hover:border-led/50 hover:bg-card/80"
+                className="inline-flex min-h-11 items-center text-xl font-semibold tracking-tight text-foreground transition-colors hover:text-led sm:text-2xl"
               >
-                <IconChip className="group-hover:bg-led/20">
-                  <Phone />
-                </IconChip>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-xs text-muted-foreground">
-                    {t("phoneLabel")}
-                  </span>
-                  <span className="block truncate text-lg font-semibold tracking-tight text-foreground">
-                    {phone}
-                  </span>
-                </span>
-                <ArrowUpRight className="size-5 shrink-0 text-muted-foreground transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-led" />
+                {phone}
               </a>
-
-              <div className="flex items-center gap-4 rounded-2xl border border-border/40 bg-card/30 p-5">
-                <IconChip tone="muted">
-                  <MapPin />
-                </IconChip>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-xs text-muted-foreground">
-                    {t("addressLabel")}
-                  </span>
-                  <span className="block truncate text-lg font-semibold tracking-tight text-foreground">
-                    {address}
-                  </span>
-                </span>
-              </div>
-            </div>
+            </dd>
           </div>
-        </GlassCard>
+          <div className="flex flex-col gap-1.5">
+            <dt className="text-sm text-muted-foreground">{t("addressLabel")}</dt>
+            <dd className="inline-flex min-h-11 items-center text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              {address}
+            </dd>
+          </div>
+        </dl>
       </Container>
-    </Section>
+
+      {/* Sayfanın en alt kenarından yükselen aurora (künyenin arkasında) */}
+      <FooterAurora />
+
+      {/* Künye. Alt boşluk, sayfa altındaki sabit GradualBlur şeridinin
+          (3.5rem) bu satırı bulandırmaması için. */}
+      <div className="relative border-t border-border/60">
+        <Container className="flex flex-col gap-6 pt-8 pb-20 md:flex-row md:items-center md:justify-between md:gap-10">
+          <Logo />
+          <nav aria-label={tf("navTitle")}>
+            <ul className="flex flex-wrap gap-x-6 gap-y-2">
+              {NAV_ITEMS.filter((i) => i.key !== "contact").map((i) => (
+                <li key={i.key}>
+                  <AnchorLink
+                    href={i.href}
+                    className="inline-flex min-h-11 items-center text-sm text-foreground/80 transition-colors hover:text-led"
+                  >
+                    {tn(i.key)}
+                  </AnchorLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <p className="text-sm text-muted-foreground">
+            © {year} Pengrim. {tf("rights")}
+          </p>
+        </Container>
+      </div>
+    </footer>
   );
 }

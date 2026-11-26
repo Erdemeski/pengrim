@@ -1,6 +1,18 @@
 "use client";
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, useMotionValue, useAnimationFrame, useTransform } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { usePerfTier } from '@/lib/perf-tier';
+
+/**
+ * Yerel fork (React Bits "ShinyText").
+ *
+ * Upstream parıltıyı `useAnimationFrame` ile JS'ten, HER karede ve bileşen
+ * ekranda olsun olmasın sürüyordu: sayfadaki her bölüm başlığı sürekli bir
+ * rAF döngüsü + background-clip:text yeniden boyaması demekti. Artık:
+ *  - Animasyon saf CSS (`@keyframes shiny-text`, bkz. globals.css).
+ *  - Ekran dışındayken `animation-play-state: paused` (IntersectionObserver).
+ *  - Zayıf cihazda parıltı kapalı, metin düz renkte.
+ * Görünüm ve hız upstream ile aynı. `delay` yalnızca ilk başlangıcı öteler.
+ */
 
 interface ShinyTextProps {
   text: string;
@@ -29,103 +41,55 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   direction = 'left',
   delay = 0
 }) => {
-  const [isPaused, setIsPaused] = useState(false);
-  const progress = useMotionValue(0);
-  const elapsedRef = useRef(0);
-  const lastTimeRef = useRef<number | null>(null);
-  const directionRef = useRef(direction === 'left' ? 1 : -1);
-
-  const animationDuration = speed * 1000;
-  const delayDuration = delay * 1000;
-
-  useAnimationFrame(time => {
-    if (disabled || isPaused) {
-      lastTimeRef.current = null;
-      return;
-    }
-
-    if (lastTimeRef.current === null) {
-      lastTimeRef.current = time;
-      return;
-    }
-
-    const deltaTime = time - lastTimeRef.current;
-    lastTimeRef.current = time;
-
-    elapsedRef.current += deltaTime;
-
-    // Animation goes from 0 to 100
-    if (yoyo) {
-      const cycleDuration = animationDuration + delayDuration;
-      const fullCycle = cycleDuration * 2;
-      const cycleTime = elapsedRef.current % fullCycle;
-
-      if (cycleTime < animationDuration) {
-        // Forward animation: 0 -> 100
-        const p = (cycleTime / animationDuration) * 100;
-        progress.set(directionRef.current === 1 ? p : 100 - p);
-      } else if (cycleTime < cycleDuration) {
-        // Delay at end
-        progress.set(directionRef.current === 1 ? 100 : 0);
-      } else if (cycleTime < cycleDuration + animationDuration) {
-        // Reverse animation: 100 -> 0
-        const reverseTime = cycleTime - cycleDuration;
-        const p = 100 - (reverseTime / animationDuration) * 100;
-        progress.set(directionRef.current === 1 ? p : 100 - p);
-      } else {
-        // Delay at start
-        progress.set(directionRef.current === 1 ? 0 : 100);
-      }
-    } else {
-      const cycleDuration = animationDuration + delayDuration;
-      const cycleTime = elapsedRef.current % cycleDuration;
-
-      if (cycleTime < animationDuration) {
-        // Animation phase: 0 -> 100
-        const p = (cycleTime / animationDuration) * 100;
-        progress.set(directionRef.current === 1 ? p : 100 - p);
-      } else {
-        // Delay phase - hold at end (shine off-screen)
-        progress.set(directionRef.current === 1 ? 100 : 0);
-      }
-    }
-  });
+  const ref = useRef<HTMLSpanElement>(null);
+  const [onScreen, setOnScreen] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const tier = usePerfTier();
 
   useEffect(() => {
-    directionRef.current = direction === 'left' ? 1 : -1;
-    elapsedRef.current = 0;
-    progress.set(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [direction]);
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
-  // Transform: p=0 -> 150% (shine off right), p=100 -> -50% (shine off left)
-  const backgroundPosition = useTransform(progress, p => `${150 - p * 2}% center`);
+  const off = disabled || tier === 'low';
+  const running = !off && onScreen && !(pauseOnHover && hovered);
 
-  const handleMouseEnter = useCallback(() => {
-    if (pauseOnHover) setIsPaused(true);
-  }, [pauseOnHover]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (pauseOnHover) setIsPaused(false);
-  }, [pauseOnHover]);
-
-  const gradientStyle: React.CSSProperties = {
-    backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
-    backgroundSize: '200% auto',
-    WebkitBackgroundClip: 'text',
-    backgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
-  };
+  const style: React.CSSProperties = off
+    ? { color }
+    : {
+        backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
+        backgroundSize: '200% auto',
+        WebkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        animationName: 'shiny-text',
+        animationDuration: `${speed}s`,
+        animationTimingFunction: 'linear',
+        animationIterationCount: 'infinite',
+        animationDirection: yoyo
+          ? direction === 'left'
+            ? 'alternate'
+            : 'alternate-reverse'
+          : direction === 'left'
+            ? 'normal'
+            : 'reverse',
+        animationDelay: delay ? `${delay}s` : undefined,
+        animationPlayState: running ? 'running' : 'paused'
+      };
 
   return (
-    <motion.span
+    <span
+      ref={ref}
       className={`inline-block ${className}`}
-      style={{ ...gradientStyle, backgroundPosition }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      style={style}
+      onMouseEnter={pauseOnHover ? () => setHovered(true) : undefined}
+      onMouseLeave={pauseOnHover ? () => setHovered(false) : undefined}
     >
       {text}
-    </motion.span>
+    </span>
   );
 };
 

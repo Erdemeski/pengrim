@@ -50,6 +50,7 @@ export function MobileMenu({
   // arkaya tıklamada `open` prop'u henüz güncellenmemiş olabiliyor ve Lenis
   // stop/start dengesi bozulup scroll kilidi yanlış tarafta kalabiliyordu.
   const openRef = useRef(false);
+  const lockedScrollRef = useRef<number | null>(null);
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -58,8 +59,20 @@ export function MobileMenu({
       setOpen(next);
       onOpenChange?.(next);
       if (!lenis) return;
-      if (next) lenis.stop();
-      else lenis.start();
+      if (next) {
+        // Kilit (html'e `overflow: clip`) bazı Android tarayıcılarında araç
+        // çubuğunu geri getirip viewport'u yeniden boyutlandırıyor; konum
+        // kayarsa kapanışta eski yerine dönülür.
+        lockedScrollRef.current = window.scrollY;
+        lenis.stop();
+      } else {
+        lenis.start();
+        const y = lockedScrollRef.current;
+        if (y !== null && Math.abs(window.scrollY - y) > 1) {
+          lenis.scrollTo(y, { immediate: true, force: true });
+        }
+        lockedScrollRef.current = null;
+      }
     },
     [lenis, onOpenChange],
   );

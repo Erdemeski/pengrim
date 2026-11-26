@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { useReducedMotion } from "motion/react";
 import { useHydrated } from "@/lib/use-hydrated";
 import { prewarm } from "@/lib/prewarm";
+import { usePerfTier } from "@/lib/perf-tier";
 
 /**
  * OGL + ~400 satırlık raymarch shader'ı ilk bundle'dan çıkarır. `ssr: false`
@@ -25,11 +26,11 @@ const GradientWaves = dynamic(() => import("@/components/GradientWaves"), {
  *
  * Yerleşim (istenen davranışın tamamı buradan çıkıyor):
  *   Dış kutu  `absolute inset-0`      → kutusu birebir <Section id="is-akisi">
- *   İç kutu   `sticky top-0 h-svh`     → viewport'a yapışır, parent'ının (yani
+ *   İç kutu   `sticky top-0 h-lvh`     → viewport'a yapışır, parent'ının (yani
  *                                        bölümün) ALT sınırında durur
  * Sonuç: bölüme scroll ile gelindiğinde ekranı doldurur, kartlar üzerinden
  * geçerken sabit kalır, bölüm bitince bölümle birlikte yukarı kayıp çıkar.
- * `svh` (dvh değil) mobilde URL bar açılıp kapanırken canvas resize thrash'ini
+ * `lvh` (dvh değil): mobilde URL bar açılıp kapanırken boyut sabit, canvas resize thrash yok
  * önler.
  *
  * Sticky'nin çalışabilmesi için ATA ZİNCİRİNDE scroll container olmamalı;
@@ -79,6 +80,9 @@ export function WorkflowWaves() {
   const { resolvedTheme } = useTheme();
   const reduceMotion = useReducedMotion();
   const hydrated = useHydrated();
+  // Zayıf cihaz: daha düşük çözünürlük + 30 fps. Seviye çalışma zamanında
+  // düşerse `key` ile WebGL bağlamı yeni ayarlarla yeniden kurulur.
+  const tier = usePerfTier();
 
   // Hareket azaltmada bileşen hiç mount edilmiyor → chunk'ı da indirme.
   useEffect(() => {
@@ -107,8 +111,12 @@ export function WorkflowWaves() {
          `border-b`si ile hizalı biter). */
       className="pointer-events-none absolute inset-0 -z-10 [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_3%)] [mask-image:linear-gradient(to_bottom,transparent,black_3%)]"
     >
-      <div className="sticky top-0 h-svh w-full">
+      {/* lvh: URL çubuğu gizlenince de alt kenara kadar kaplar (svh kısa kalıyordu) ve çubuk animasyonunda boyut değişmez → canvas resize thrash yok. */}
+      <div className="sticky top-0 h-lvh w-full">
         <GradientWaves
+          key={tier}
+          maxDpr={tier === "low" ? 0.75 : 1}
+          maxFps={tier === "low" ? 30 : 0}
           horizonColor={palette.horizonColor}
           waveColor={palette.waveColor}
           crestColor={palette.crestColor}

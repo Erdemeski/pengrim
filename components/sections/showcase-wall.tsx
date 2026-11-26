@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { prewarm } from "@/lib/prewarm";
+import { usePerfTier } from "@/lib/perf-tier";
 import type { LightboxItem } from "./showcase-lightbox";
 import type { DriftWallItem } from "@/components/DriftWall";
 
@@ -57,6 +58,7 @@ export function ShowcaseWall({
   // DriftWall zaten ssr:false olduğu için hidrasyon uyuşmazlığı doğmaz.
   const [viewport, setViewport] = useState(1280);
   const [selected, setSelected] = useState<LightboxItem | null>(null);
+  const perfTier = usePerfTier();
 
   useEffect(() => {
     const measure = () => setViewport(window.innerWidth);
@@ -127,7 +129,8 @@ export function ShowcaseWall({
         speed={16}
         variance={0.75}
         direction="up"
-        parallax={0.25}
+        /* zayıf cihazda imleç eğimi kapalı (kare başına düzlem transform'u yok) */
+        parallax={perfTier === "low" ? 0 : 0.25}
         lift={40}
         dim={1}
         tintOpacity={0.16}

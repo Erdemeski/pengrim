@@ -5,10 +5,17 @@ import type { CSSProperties, ReactNode } from "react";
 import Image from "next/image";
 import { useReducedMotion } from "motion/react";
 import {
+  BALL_BOX,
+  BALL_FADE_IN0,
+  BALL_FADE_IN1,
+  BALL_PNG_FILL,
+  ballFrameLayout,
   clearBallAnchorGeom,
   setBallAnchorGeom,
   solveObjectPosition,
 } from "@/lib/ball-anchor";
+import { subscribeScroll } from "@/lib/scroll-clock";
+import { getStableViewport, subscribeViewport } from "@/lib/viewport";
 
 /**
  * React Bits `ScrollExpand`in kart-çapalı uyarlaması.
@@ -31,9 +38,22 @@ import {
  *     durur: gradyan tam-viewport çerçeveye uygulansa dinlenmede sadece en şeffaf
  *     ucu görünür, `clip-path: inset()` ise çerçevedeki border'ı tamamen yutar.
  *
+ * Ek olarak (scroll senkronu):
+ *  - Güncellemeler sayfanın tek scroll saatinden (`lib/scroll-clock`) gelir;
+ *    BallJourney ile aynı karede, aynı scrollY ile çalışır.
+ *  - Clip'in alt kenarı viewport tabanının biraz ALTINA taşırılır
+ *    (`BOTTOM_OVERSCAN`). Dokunmatik scroll compositor'da JS'ten bir kare önde
+ *    gittiğinde eskiden altta boş şerit görünüyordu; artık o şerit ekran
+ *    dışında kalıyor. Görsel bu bölgeyi zaten kaplıyor (bkz. apply()).
+ *  - `ballAnchor` açıkken tutunma fazındaki top, fotoğraf sarmalayıcısıyla
+ *    AYNI transform'u taşıyan bir katmanda çizilir → fotoğrafa kilitli.
+ *
  * Ölçüm yapılmadan (SSR / JS kapalı) ve prefers-reduced-motion'da CSS değişkenlerinin
  * fallback değerleri statik kartı üretir — hidrasyon uyuşmazlığı ya da boş blok yok.
  */
+
+/** Alt kenar taşırma payı (px) — bkz. üstteki not. */
+const BOTTOM_OVERSCAN = 96;
 
 const clamp = (v: number, a: number, b: number): number =>
   v < a ? a : v > b ? b : v;
@@ -125,9 +145,6 @@ export default function ScrollExpandCard({
       enabled: false,
     };
     let lastKey = "";
-    let lastW = 0;
-    let lastH = 0;
-    let raf = 0;
     let roTimer = 0;
 
     // Yalnız kendi yazdığımız özellikleri geri al — React'in style prop'u kalsın.
@@ -144,6 +161,11 @@ export default function ScrollExpandCard({
       "--se-rest-o",
       "--se-cap-o",
       "--se-op",
+      "--se-wb",
+      "--se-ball-x",
+      "--se-ball-y",
+      "--se-ball-k",
+      "--se-ball-o",
     ];
     const clear = () => {
       track.style.height = "";
@@ -154,7 +176,8 @@ export default function ScrollExpandCard({
 
     const measure = () => {
       const vw = document.documentElement.clientWidth;
-      const H = window.innerHeight;
+      // Büyük viewport: URL çubuğu gizlenince de tam ekran görsel alta oturur.
+      const H = getStableViewport().h;
 
       // Komşu hücrenin gerçek yüksekliği: bento satırı içeriğe göre esneyebilir.
       const prev = track.previousElementSibling as HTMLElement | null;
@@ -207,6 +230,14 @@ export default function ScrollExpandCard({
             "--se-op",
             `${(px * 100).toFixed(3)}% ${(py * 100).toFixed(3)}%`
           );
+          // Fotoğrafın içindeki top: frame-yerel konum + ölçek (scroll'dan bağımsız).
+          const bl = ballFrameLayout(vw, H, n.w, n.h, px, py);
+          frame.style.setProperty("--se-ball-x", `${(bl.x - BALL_BOX / 2).toFixed(2)}px`);
+          frame.style.setProperty("--se-ball-y", `${(bl.y - BALL_BOX / 2).toFixed(2)}px`);
+          frame.style.setProperty(
+            "--se-ball-k",
+            (bl.d / BALL_PNG_FILL / BALL_BOX).toFixed(5)
+          );
           setBallAnchorGeom({
             enabled: true,
             top: s.top,
@@ -229,10 +260,10 @@ export default function ScrollExpandCard({
       }
     };
 
-    const apply = () => {
+    const apply = (scrollY: number) => {
       if (!s.enabled) return;
 
-      const T = s.top - window.scrollY;
+      const T = s.top - scrollY;
       const p = clamp((s.span - T) / s.span, 0, 1);
       const e = p * p * (3 - 2 * p);
 
@@ -244,15 +275,25 @@ export default function ScrollExpandCard({
       const pin = clamp(-T, 0, s.hold);
       // Katman promosyonu yalnız hareket varken: dinlenmede ve bırakıldıktan
       // sonra tam ekran boyutunda bir compositor katmanını canlı tutmayalım.
-      const live = p > 0.001 && pin < s.hold;
+      const live = p > 0.001 && T > -s.hold;
+      // Clip alt kenarı: viewport tabanının en fazla BOTTOM_OVERSCAN altına
+      // taşar. b/2 ile sınırlı çünkü görsel (translateY(−b/2) + scale ≥ 1)
+      // viewport tabanının en az b/2 altına kadar uzanıyor — taşırılan bölge
+      // her zaman görselle dolu.
+      const bc = b - Math.min(BOTTOM_OVERSCAN, b / 2);
+      // Fotoğraftaki top: kart tam ekrana yaklaşırken belirir, ayrışma anında
+      // (T = −hold) BallJourney'in sabit topuna devreder.
+      const ballO =
+        ballAnchor && T > -s.hold ? smoothstep(BALL_FADE_IN0, BALL_FADE_IN1, p) : 0;
 
       const key =
         `${b.toFixed(1)}|${side.toFixed(1)}|${rad.toFixed(2)}|` +
-        `${radb.toFixed(2)}|${pin.toFixed(1)}|${p.toFixed(3)}`;
+        `${radb.toFixed(2)}|${pin.toFixed(1)}|${p.toFixed(3)}|${ballO.toFixed(3)}`;
       if (key === lastKey) return;
       lastKey = key;
 
-      frame.style.setProperty("--se-b", `${b}px`);
+      frame.style.setProperty("--se-b", `${bc}px`);
+      frame.style.setProperty("--se-wb", `${b}px`);
       frame.style.setProperty("--se-x", `${side}px`);
       frame.style.setProperty("--se-rad", `${rad}px`);
       frame.style.setProperty("--se-radb", `${radb}px`);
@@ -268,39 +309,23 @@ export default function ScrollExpandCard({
         `${1 - smoothstep(0.04, 0.36, p)}`
       );
       frame.style.setProperty("--se-cap-o", `${smoothstep(0.72, 1, p)}`);
+      frame.style.setProperty("--se-ball-o", ballO.toFixed(3));
       frame.style.willChange = live ? "clip-path, transform" : "";
     };
 
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        apply();
-      });
-    };
-
     const onResize = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      // Mobil URL çubuğu açılıp kapanırken yeniden ölçme — scroll sıçrar.
-      if (w === lastW && Math.abs(h - lastH) <= 120) return;
-      lastW = w;
-      lastH = h;
       measure();
-      apply();
+      apply(window.scrollY);
     };
-
-    lastW = window.innerWidth;
-    lastH = window.innerHeight;
     measure();
-    apply();
+    apply(window.scrollY);
 
     // Üstteki içerik (font/görsel yüklemesi) yer değiştirdiğinde yeniden ölç.
     // Yazdığı yükseklik yalnız innerHeight'a bağlı olduğundan tek geçişte
     // yakınsar; ResizeObserver döngüsü kurulmaz.
     const remeasure = () => {
       measure();
-      apply();
+      apply(window.scrollY);
     };
     remeasureRef.current = remeasure;
     const ro = new ResizeObserver(() => {
@@ -313,17 +338,15 @@ export default function ScrollExpandCard({
     ro.observe(document.body);
     document.fonts?.ready.then(remeasure).catch(() => {});
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
+    const unsubScroll = subscribeScroll(apply);
+    // Yalnız gerçek boyut değişiminde (URL çubuğu animasyonunda değil).
+    const unsubViewport = subscribeViewport(onResize);
 
     return () => {
-      if (raf) cancelAnimationFrame(raf);
       if (roTimer) clearTimeout(roTimer);
       ro.disconnect();
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
+      unsubScroll();
+      unsubViewport();
       remeasureRef.current = null;
       if (ballAnchor) clearBallAnchorGeom();
       clear();
@@ -381,7 +404,7 @@ export default function ScrollExpandCard({
           style={{
             left: "var(--se-x, 0px)",
             right: "var(--se-x, 0px)",
-            bottom: "var(--se-b, 0px)",
+            bottom: "var(--se-wb, 0px)",
             borderRadius: "var(--se-rad, var(--radius-2xl))",
             opacity: "var(--se-rest-o, 1)",
           }}
@@ -414,6 +437,37 @@ export default function ScrollExpandCard({
             <p className="mx-auto w-full max-w-7xl text-balance px-5 pb-14 font-display text-2xl font-semibold leading-tight tracking-tight text-floodlight [text-shadow:0_2px_20px_rgb(0_0_0/0.55)] sm:px-8 sm:pb-16 sm:text-4xl">
               {caption}
             </p>
+          </div>
+        ) : null}
+
+        {/* Tutunma fazındaki top — görsel sarmalayıcısıyla birebir aynı
+            transform; alt yazı katmanının ÜSTÜNDE (BallJourney'in sabit topu
+            da onun üstünde, devirde parlaklık sıçraması olmasın). */}
+        {ballAnchor ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              transform:
+                "translate3d(0, var(--se-dy, 0px), 0) scale(var(--se-z, 1))",
+              opacity: "var(--se-ball-o, 0)",
+            }}
+          >
+            <Image
+              src="/ball-768.png"
+              alt=""
+              width={BALL_BOX}
+              height={BALL_BOX}
+              unoptimized
+              className="absolute block [filter:drop-shadow(0_18px_30px_rgb(0_0_0/0.45))]"
+              style={{
+                left: "var(--se-ball-x, 0px)",
+                top: "var(--se-ball-y, 0px)",
+                width: BALL_BOX,
+                height: BALL_BOX,
+                transform: "scale(var(--se-ball-k, 0))",
+              }}
+            />
           </div>
         ) : null}
       </div>

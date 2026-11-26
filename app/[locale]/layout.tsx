@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
@@ -10,8 +10,9 @@ import {
 import { routing } from "@/i18n/routing";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
-import { FirstVisitGate } from "@/components/layout/first-visit-gate";
+import { SiteLoader } from "@/components/layout/site-loader";
 import GradualBlur from "@/components/GradualBlur";
+import { SITE_URL } from "@/lib/constants";
 import "../globals.css";
 
 // latin-ext zorunlu: varsayılan dil Türkçe ve ı ğ ş İ ç ö ü yalnız bu alt
@@ -47,6 +48,17 @@ const PAGE_BLUR_STYLE = { zIndex: 30 } as const;
 
 type LocaleParams = { params: Promise<{ locale: string }> };
 
+/**
+ * `colorScheme`: sitenin kendi koyu (ve açık) teması olduğunu tarayıcıya
+ * bildirir. Samsung Internet'in "zorla karanlık mod"u bu sinyal yokken
+ * sayfayı — canvas'taki hero kareleri ve görseller dahil — yeniden
+ * renklendirmeye çalışıp bozuk görüntü üretebiliyor.
+ */
+export const viewport: Viewport = {
+  colorScheme: "dark light",
+  themeColor: "#0d1714",
+};
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
@@ -57,8 +69,25 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "meta" });
   return {
+    metadataBase: new URL(SITE_URL),
     title: t("title"),
     description: t("description"),
+    alternates: {
+      canonical: `/${locale}`,
+      languages: {
+        ...Object.fromEntries(routing.locales.map((l) => [l, `/${l}`])),
+        "x-default": `/${routing.defaultLocale}`,
+      },
+    },
+    openGraph: {
+      type: "website",
+      url: `/${locale}`,
+      siteName: "Pengrim",
+      title: t("title"),
+      description: t("description"),
+      locale: locale === "tr" ? "tr_TR" : "en_US",
+      images: [{ url: "/pengrim-first-frame-edited.webp", width: 1223, height: 687 }],
+    },
     icons: {
       icon: "/pengrim-icon.png",
     },
@@ -129,10 +158,10 @@ export default async function LocaleLayout({
                 opacity={1}
                 style={PAGE_BLUR_STYLE}
               />
-              {/* İlk ziyaret kapısı — hero kareleri 400 ms'de hazırsa hiç
-                  render edilmez. Lenis'e erişebilmesi için SmoothScroll'un
-                  içinde. */}
-              <FirstVisitGate />
+              {/* Açılış ekranı — her girişte; hero'nun ağır parçaları hazır
+                  olunca tek geçişle açılır. Sunucuda da render edilir, yani
+                  ilk boyamadan itibaren örter. */}
+              <SiteLoader />
             </SmoothScroll>
           </NextIntlClientProvider>
         </ThemeProvider>

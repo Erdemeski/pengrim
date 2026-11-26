@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Pengrim | Sport Advertising",
-    "description": "Pengrim connects brands with LED perimeter signage, stadium inventory, and broadcast visibility for sporting events. It manages the entire process, from match and league selection to reporting."
+    "description": "Pengrim sells LED perimeter boards, in-stadium advertising space and broadcast visibility at football matches, and runs the process from match selection to the post-match report."
   },
   "nav": {
     "inventory": "Inventory",
@@ -19,10 +19,10 @@
   },
   "hero": {
     "eyebrow": "SPORT ADVERTISING",
-    "headline": "Take your brand pitchside and on-screen.",
-    "subline": "The right match, the right league, the right audience.",
+    "headline": "Put your brand on the touchline.",
+    "subline": "We pick the match, the boards and the airtime with you.",
     "ctaPrimary": "Get a quote",
-    "ctaSecondary": "How it works",
+    "ctaSecondary": "How we work",
     "ribbon": {
       "a": "LED PERIMETER",
       "b": "STADIUM INVENTORY",
@@ -32,109 +32,113 @@
   },
   "trust": {
     "stats": {
-      "reach": "YEARS OF EXPERIENCE",
-      "matches": "MATCH ORGANIZATION",
-      "teams": "SPORTING CLUBS AND STADIUMS",
-      "brands": "BRAND CAMPAIGNS"
-    },
-    "note": ""
+      "reach": "Years in the business",
+      "matches": "Matches organized",
+      "teams": "Clubs and stadiums",
+      "brands": "Brand campaigns"
+    }
   },
   "inventory": {
-    "title": "Every frame of the pitch is ad space",
-    "subtitle": "We place your brand into the flow of the match: on air, in the stands, on screen.",
+    "title": "Where you'll be seen",
+    "subtitle": "LED boards, in-stadium space and broadcast time, in a single quote.",
     "items": {
       "led": {
         "title": "LED perimeter boards",
-        "desc": "Rotating, animated brand visibility on pitchside digital boards. Right in the camera's eye."
+        "desc": "Rotating brand slots on the digital boards along the touchline, filmed head-on by the main camera."
       },
       "static": {
-        "title": "In-stadium inventory",
-        "desc": "Backboard, stand and tunnel branding; static boards and every brand touchpoint inside the venue."
+        "title": "In-stadium space",
+        "desc": "Behind-the-goal boards, stand and tunnel branding. Fans see it from the moment they walk in."
       },
       "broadcast": {
         "title": "Broadcast visibility",
-        "desc": "Guaranteed brand time across TV and digital streams; placement optimized to camera angles."
+        "desc": "We set your on-screen time against the camera plan up front and report it minute by minute after the match."
       },
       "package": {
-        "title": "Packages & consulting",
-        "desc": "Campaign packages built around match, league and audience; let us handle buying and reporting."
+        "title": "Packages and consulting",
+        "desc": "We choose matches that fit your budget and audience, and handle everything from buying to the report."
       }
     },
     "feature": {
       "title": "",
       "desc": "",
       "hint": "",
-      "caption": "Every angle the camera sees, your brand is on the pitch."      
+      "caption": "Wherever the camera turns, your brand is in frame."
+    },
+    "art": {
+      "goalBack": "Behind goal",
+      "stands": "Stands",
+      "tunnel": "Tunnel",
+      "live": "LIVE",
+      "onScreen": "Minutes the brand is on screen during the match"
     }
   },
   "how": {
     "eyebrow": "HOW IT WORKS",
     "title": "Matchday-ready in four steps",
-    "subtitle": "From brief to broadcast, we keep the process transparent and measurable.",
+    "subtitle": "We write down what you get at each step, and what we'll report after the match, before we start.",
     "steps": {
       "select": {
-        "title": "Match & league selection",
-        "desc": "We pick matches, leagues and stadiums together, based on your audience and budget."
+        "title": "Match and league selection",
+        "desc": "We choose matches, leagues and stadiums with you, based on your audience and budget."
       },
       "package": {
-        "title": "Inventory & package",
-        "desc": "We build your campaign package: LED time, static inventory and broadcast visibility."
+        "title": "Ad space and package",
+        "desc": "We put together the package: LED time, in-stadium space and broadcast visibility."
       },
       "approve": {
-        "title": "Purchase & approval",
-        "desc": "Contract, creative sign-off and placement plan. One point of contact, clear terms."
+        "title": "Purchase and approval",
+        "desc": "Contract, creative approval and placement plan, settled with a single contact."
       },
       "report": {
-        "title": "Broadcast & reporting",
-        "desc": "After the match we report visibility time, camera exposure and reach metrics."
+        "title": "Broadcast and reporting",
+        "desc": "After the match we report on-screen time, camera shots and reach."
       }
     }
   },
   "reach": {
-    "title": "One match, millions of impressions",
-    "subtitle": "Sports makes your brand visible in the stadium, on screen and across social, all at once.",
+    "title": "The board in the stadium reaches living rooms",
+    "subtitle": "Boards are seen from the stands and on air for the whole match, and keep travelling in highlight clips afterwards.",
     "channels": {
       "tv": {
-        "title": "Live TV",
-        "desc": "Uninterrupted brand time during the live broadcast."
+        "title": "Live broadcast",
+        "desc": "The boards stay in frame for the whole match."
       },
       "ott": {
-        "title": "Digital & OTT",
-        "desc": "Repeated visibility on streaming and highlight platforms."
+        "title": "Digital and OTT",
+        "desc": "Watched again on streaming services and in match highlights."
       },
       "social": {
         "title": "Social clips",
-        "desc": "Your brand re-shared organically in goal and highlight clips."
+        "desc": "Every shared goal clip carries the boards with it."
       },
       "stadium": {
-        "title": "In-stadium",
-        "desc": "Direct contact with tens of thousands of fans in the stands."
+        "title": "In the stadium",
+        "desc": "Fans in the stands have the boards in front of them for ninety minutes."
       }
     }
   },
   "showcase": {
-    "title": "How it looks on the pitch",
-    "subtitle": "Sample placements and broadcast frames. Imagery will be updated once brand assets are provided.",
-    "placeholder": "Placeholder tiles, real match frames coming soon",
+    "placeholder": "Sample images. Real match frames will be added.",
     "imageAlt": "Pitch placement image {n}",
     "expand": "Enlarge image",
     "close": "Close preview"
   },
   "contact": {
-    "eyebrow": "CONTACT",
-    "title": "Reach out directly",
-    "subtitle": "Let's talk about your campaign. Email or call us and we'll come back with a tailored match and package proposal.",
+    "title": "Which match do you want to be seen in?",
+    "subtitle": "Tell us the matches and your budget, and we'll send the available space and pricing.",
     "emailLabel": "Email",
     "phoneLabel": "Phone",
     "addressLabel": "Location"
   },
   "footer": {
-    "tagline": "We connect brands with sports' most visible moments.",
-    "navTitle": "Explore",
-    "contactTitle": "Contact",
+    "navTitle": "Sections",
     "email": "info@pengrim.com",
     "phone": "+90 (212) 000 00 00",
     "address": "Istanbul, Türkiye",
     "rights": "All rights reserved."
+  },
+  "loader": {
+    "label": "Loading the site"
   }
 }

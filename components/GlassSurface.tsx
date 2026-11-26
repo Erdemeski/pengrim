@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState, useId } from 'react';
+import { isSamsungInternet, useIsCoarsePointer, usePerfTier } from '@/lib/perf-tier';
 
 export interface GlassSurfaceProps {
   children?: React.ReactNode;
@@ -90,6 +91,15 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   const blueGradId = `blue-grad-${uniqueId}`;
 
   const [svgSupported, setSvgSupported] = useState<boolean>(false);
+  // Yerel ek — SVG displacement camı (`backdrop-filter: url(#…)`) Chromium'da
+  // her karede YAZILIMLA rasterize ediliyor; arkasında kayan hero kareleri
+  // varken mobilde ciddi kare düşmesine, Samsung Internet'te bozuk tile'lara
+  // yol açıyordu. Yalnız ince işaretçili (fare) + güçlü cihazda açık.
+  // Dokunmatikte CSS blur camı, zayıf cihazda blur'suz yarı saydam zemin.
+  const tier = usePerfTier();
+  const coarse = useIsCoarsePointer();
+  const lite = tier === 'low';
+  const svgActive = svgSupported && !coarse && !lite && !isSamsungInternet();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const feImageRef = useRef<SVGFEImageElement>(null);
@@ -240,7 +250,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
 
     const backdropFilterSupported = supportsBackdropFilter();
 
-    if (svgSupported) {
+    if (svgActive) {
       return {
         ...baseStyles,
         background: isDarkMode ? `hsl(0 0% 0% / ${backgroundOpacity})` : `hsl(0 0% 100% / ${backgroundOpacity})`,
@@ -265,8 +275,8 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
       };
     } else {
       if (isDarkMode) {
-        if (!backdropFilterSupported) {
-          // backdrop-filter yoksa: net görünür koyu cam zemin
+        if (!backdropFilterSupported || lite) {
+          // backdrop-filter yoksa (ya da zayıf cihazda): net görünür koyu cam zemin
           return {
             ...baseStyles,
             background: 'rgba(8, 12, 11, 0.62)',
@@ -289,7 +299,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
           };
         }
       } else {
-        if (!backdropFilterSupported) {
+        if (!backdropFilterSupported || lite) {
           return {
             ...baseStyles,
             background: 'rgba(255, 255, 255, 0.4)',

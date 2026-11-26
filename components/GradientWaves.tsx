@@ -25,6 +25,14 @@ export interface GradientWavesProps {
   parallaxStrength?: number;
   grain?: boolean;
   grainIntensity?: number;
+  /**
+   * Yerel ek: çizim tamponunun en yüksek piksel yoğunluğu. Tam ekran raymarch
+   * için 2× DPR fill-rate'i 4 katına çıkarır ama yumuşak dalgalarda görünür
+   * fark yaratmaz. Mount'ta okunur (değişince `key` ile yeniden kurun).
+   */
+  maxDpr?: number;
+  /** Yerel ek: kare hızı sınırı (0 = sınırsız). Mount'ta okunur. */
+  maxFps?: number;
   className?: string;
 }
 
@@ -180,10 +188,14 @@ const GradientWaves: React.FC<GradientWavesProps> = ({
   parallaxStrength = 0.5,
   grain = true,
   grainIntensity = 0.05,
+  maxDpr = 1,
+  maxFps = 0,
   className = ''
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const enableMouseRef = useRef<boolean>(mouseInteraction);
+  // Mount anındaki değerler — kurulum effect'i bilerek yalnız bir kez çalışıyor.
+  const perfRef = useRef({ maxDpr, maxFps });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -194,8 +206,10 @@ const GradientWaves: React.FC<GradientWavesProps> = ({
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 2)
+      dpr: Math.min(window.devicePixelRatio || 1, perfRef.current.maxDpr)
     });
+    const minFrameMs = perfRef.current.maxFps > 0 ? 1000 / perfRef.current.maxFps - 1 : 0;
+    let lastRender = 0;
 
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 0);
@@ -275,6 +289,11 @@ const GradientWaves: React.FC<GradientWavesProps> = ({
     const t0 = performance.now();
 
     const loop = (t: number) => {
+      if (minFrameMs && t - lastRender < minFrameMs) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
+      lastRender = t;
       (program.uniforms.iTime as { value: number }).value = (t - t0) * 0.001;
       const tx = enableMouseRef.current ? targetMouse[0] : 0.5;
       const ty = enableMouseRef.current ? targetMouse[1] : 0.5;
